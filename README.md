@@ -11,7 +11,7 @@ Start with a tiny island, collect resources, and expand your world. Features pla
 
 ## Development Setup
 1. Install [.NET 6.0 SDK](https://dotnet.microsoft.com/download) or newer
-2. Install [MonoGame](https://www.monogame.net/downloads/)
+2. Install [MonoGame](https://www.monogame.net/)
 3. Clone and run:
 ```bash
 dotnet run
