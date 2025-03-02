@@ -3,7 +3,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MyIslandGame.ECS;
+using MyIslandGame.ECS.Components;
+using MyIslandGame.ECS.Systems;
 using MyIslandGame.Input;
+using MyIslandGame.Rendering;
 
 namespace MyIslandGame.States
 {
@@ -16,11 +19,16 @@ namespace MyIslandGame.States
         private InputManager _inputManager;
         private SpriteBatch _spriteBatch;
         
-        // Temporary variables for prototype
+        private RenderSystem _renderSystem;
+        private MovementSystem _movementSystem;
+        private CollisionSystem _collisionSystem;
+        
         private Entity _playerEntity;
-        private Vector2 _playerPosition;
         private Texture2D _playerTexture;
         private Texture2D _grassTexture;
+        
+        // World bounds for camera clamping
+        private Rectangle _worldBounds;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayingState"/> class.
@@ -48,8 +56,20 @@ namespace MyIslandGame.States
             _inputManager.RegisterAction("MoveRight", new InputAction().MapKey(Keys.D).MapKey(Keys.Right));
             _inputManager.RegisterAction("Interact", new InputAction().MapKey(Keys.E).MapKey(Keys.Space));
             
-            // Initialize player position
-            _playerPosition = new Vector2(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2);
+            // Create systems
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _renderSystem = new RenderSystem(_entityManager, _spriteBatch, GraphicsDevice);
+            _movementSystem = new MovementSystem(_entityManager);
+            _collisionSystem = new CollisionSystem(_entityManager);
+            
+            // Add systems to entity manager
+            _entityManager.AddSystem(_movementSystem);
+            _entityManager.AddSystem(_collisionSystem);
+            
+            // Set up collision handlers
+            _collisionSystem.CollisionOccurred += HandleCollision;
+            _collisionSystem.TriggerEntered += HandleTriggerEnter;
+            _collisionSystem.TriggerExited += HandleTriggerExit;
         }
         
         /// <summary>
@@ -59,25 +79,78 @@ namespace MyIslandGame.States
         {
             base.LoadContent();
             
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            // Create textures
+            _playerTexture = CreateColoredTexture(32, 32, Color.Blue);
+            _grassTexture = CreateColoredTexture(64, 64, Color.Green);
             
-            // Create a simple colored rectangle texture for the player
-            _playerTexture = new Texture2D(GraphicsDevice, 32, 32);
-            Color[] colorData = new Color[32 * 32];
+            // Create player entity
+            _playerEntity = _entityManager.CreateEntity();
+            
+            var playerTransform = new TransformComponent(
+                new Vector2(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2));
+            
+            var playerSprite = new SpriteComponent(_playerTexture)
+            {
+                Origin = new Vector2(_playerTexture.Width / 2f, _playerTexture.Height / 2f)
+            };
+            
+            var playerVelocity = new VelocityComponent(200f, 0.1f);
+            
+            var playerCollider = new ColliderComponent(
+                new Vector2(_playerTexture.Width, _playerTexture.Height),
+                Vector2.Zero,
+                ColliderType.Rectangle);
+            
+            _playerEntity.AddComponent(playerTransform);
+            _playerEntity.AddComponent(playerSprite);
+            _playerEntity.AddComponent(playerVelocity);
+            _playerEntity.AddComponent(playerCollider);
+            
+            // Create some obstacle entities for testing collision
+            CreateObstacle(new Vector2(500, 300), new Vector2(50, 50), Color.Red);
+            CreateObstacle(new Vector2(300, 500), new Vector2(50, 100), Color.Yellow);
+            CreateObstacle(new Vector2(700, 400), new Vector2(100, 50), Color.Orange);
+        }
+        
+        /// <summary>
+        /// Creates a simple obstacle entity.
+        /// </summary>
+        /// <param name="position">The position.</param>
+        /// <param name="size">The size.</param>
+        /// <param name="color">The color.</param>
+        private void CreateObstacle(Vector2 position, Vector2 size, Color color)
+        {
+            var texture = CreateColoredTexture((int)size.X, (int)size.Y, color);
+            
+            var entity = _entityManager.CreateEntity();
+            
+            entity.AddComponent(new TransformComponent(position));
+            entity.AddComponent(new SpriteComponent(texture)
+            {
+                Origin = new Vector2(texture.Width / 2f, texture.Height / 2f)
+            });
+            entity.AddComponent(new ColliderComponent(size, Vector2.Zero, ColliderType.Rectangle));
+        }
+        
+        /// <summary>
+        /// Creates a texture filled with a solid color.
+        /// </summary>
+        /// <param name="width">The width.</param>
+        /// <param name="height">The height.</param>
+        /// <param name="color">The color.</param>
+        /// <returns>The created texture.</returns>
+        private Texture2D CreateColoredTexture(int width, int height, Color color)
+        {
+            var texture = new Texture2D(GraphicsDevice, width, height);
+            var colorData = new Color[width * height];
+            
             for (int i = 0; i < colorData.Length; i++)
             {
-                colorData[i] = Color.Blue;
+                colorData[i] = color;
             }
-            _playerTexture.SetData(colorData);
             
-            // Create a simple colored rectangle texture for the grass
-            _grassTexture = new Texture2D(GraphicsDevice, 64, 64);
-            Color[] grassColorData = new Color[64 * 64];
-            for (int i = 0; i < grassColorData.Length; i++)
-            {
-                grassColorData[i] = Color.Green;
-            }
-            _grassTexture.SetData(grassColorData);
+            texture.SetData(colorData);
+            return texture;
         }
         
         /// <summary>
@@ -99,43 +172,62 @@ namespace MyIslandGame.States
             // Update input
             _inputManager.Update();
             
-            // Simple player movement
-            float moveSpeed = 200f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            Vector2 movement = Vector2.Zero;
-            
-            if (_inputManager.IsActionActive("MoveUp"))
+            // Handle player movement based on input
+            if (_playerEntity != null)
             {
-                movement.Y -= 1;
+                var velocity = _playerEntity.GetComponent<VelocityComponent>();
+                var transform = _playerEntity.GetComponent<TransformComponent>();
+                
+                Vector2 direction = Vector2.Zero;
+                
+                if (_inputManager.IsActionActive("MoveUp"))
+                {
+                    direction.Y -= 1;
+                }
+                
+                if (_inputManager.IsActionActive("MoveDown"))
+                {
+                    direction.Y += 1;
+                }
+                
+                if (_inputManager.IsActionActive("MoveLeft"))
+                {
+                    direction.X -= 1;
+                }
+                
+                if (_inputManager.IsActionActive("MoveRight"))
+                {
+                    direction.X += 1;
+                }
+                
+                // Normalize the direction vector if necessary
+                if (direction != Vector2.Zero)
+                {
+                    direction.Normalize();
+                }
+                
+                // Apply movement to velocity
+                velocity.Velocity = direction * velocity.MaxSpeed;
+                
+                // Update camera to follow player
+                _renderSystem.Camera.FollowTarget(transform.Position, 5f);
+                
+                // Clamp camera to world bounds
+                _renderSystem.Camera.ClampToBounds(_worldBounds);
             }
             
-            if (_inputManager.IsActionActive("MoveDown"))
+            // Handle camera zoom with keyboard controls (for testing)
+            if (Keyboard.GetState().IsKeyDown(Keys.OemPlus) || Keyboard.GetState().IsKeyDown(Keys.Add))
             {
-                movement.Y += 1;
+                _renderSystem.Camera.ZoomBy(0.02f);
             }
             
-            if (_inputManager.IsActionActive("MoveLeft"))
+            if (Keyboard.GetState().IsKeyDown(Keys.OemMinus) || Keyboard.GetState().IsKeyDown(Keys.Subtract))
             {
-                movement.X -= 1;
+                _renderSystem.Camera.ZoomBy(-0.02f);
             }
             
-            if (_inputManager.IsActionActive("MoveRight"))
-            {
-                movement.X += 1;
-            }
-            
-            // Normalize the movement vector if moving diagonally
-            if (movement != Vector2.Zero)
-            {
-                movement.Normalize();
-            }
-            
-            _playerPosition += movement * moveSpeed;
-            
-            // Keep player within bounds
-            _playerPosition.X = MathHelper.Clamp(_playerPosition.X, 0, GraphicsDevice.Viewport.Width - _playerTexture.Width);
-            _playerPosition.Y = MathHelper.Clamp(_playerPosition.Y, 0, GraphicsDevice.Viewport.Height - _playerTexture.Height);
-            
-            // Update entity manager
+            // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
         }
         
@@ -150,22 +242,91 @@ namespace MyIslandGame.States
             
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            // Draw the world
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+            // Define world size (for now, will be replaced with proper world generation)
+            int worldWidth = 1600;
+            int worldHeight = 1200;
+            _worldBounds = new Rectangle(-200, -200, worldWidth, worldHeight);
             
             // Draw grass tiles
-            for (int x = 0; x < GraphicsDevice.Viewport.Width; x += 64)
+            _spriteBatch.Begin(
+                SpriteSortMode.Deferred, 
+                BlendState.AlphaBlend, 
+                SamplerState.PointClamp, 
+                null, 
+                null, 
+                null, 
+                _renderSystem.Camera.TransformMatrix);
+            
+            // Draw grass tiles for the entire world
+            int tileSize = 64;
+            for (int x = _worldBounds.Left; x < _worldBounds.Right; x += tileSize)
             {
-                for (int y = 0; y < GraphicsDevice.Viewport.Height; y += 64)
+                for (int y = _worldBounds.Top; y < _worldBounds.Bottom; y += tileSize)
                 {
                     _spriteBatch.Draw(_grassTexture, new Vector2(x, y), Color.White);
                 }
             }
             
-            // Draw player
-            _spriteBatch.Draw(_playerTexture, _playerPosition, Color.White);
-            
             _spriteBatch.End();
+            
+            // Draw entities using the render system
+            _renderSystem.Update(gameTime);
+        }
+        
+        /// <summary>
+        /// Handles collision between two entities.
+        /// </summary>
+        /// <param name="entityA">The first entity.</param>
+        /// <param name="entityB">The second entity.</param>
+        private void HandleCollision(Entity entityA, Entity entityB)
+        {
+            // Simple collision response for player entity
+            if (entityA == _playerEntity || entityB == _playerEntity)
+            {
+                var playerEntity = entityA == _playerEntity ? entityA : entityB;
+                var otherEntity = entityA == _playerEntity ? entityB : entityA;
+                
+                var playerTransform = playerEntity.GetComponent<TransformComponent>();
+                var playerVelocity = playerEntity.GetComponent<VelocityComponent>();
+                var otherTransform = otherEntity.GetComponent<TransformComponent>();
+                
+                // Calculate push direction (away from obstacle)
+                Vector2 pushDirection = playerTransform.Position - otherTransform.Position;
+                if (pushDirection != Vector2.Zero)
+                {
+                    pushDirection.Normalize();
+                    
+                    // Push player away from obstacle
+                    playerTransform.Position += pushDirection * 3f;
+                    
+                    // Stop velocity in collision direction
+                    float dotProduct = Vector2.Dot(playerVelocity.Velocity, pushDirection);
+                    if (dotProduct < 0)
+                    {
+                        playerVelocity.Velocity -= pushDirection * dotProduct;
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Handles trigger enter events.
+        /// </summary>
+        /// <param name="entityA">The first entity.</param>
+        /// <param name="entityB">The second entity.</param>
+        private void HandleTriggerEnter(Entity entityA, Entity entityB)
+        {
+            // Handle trigger interactions here
+        }
+        
+        /// <summary>
+        /// Handles trigger exit events.
+        /// </summary>
+        /// <param name="entityA">The first entity.</param>
+        /// <param name="entityB">The second entity.</param>
+        private void HandleTriggerExit(Entity entityA, Entity entityB)
+        {
+            // Handle trigger exit here
         }
     }
 }

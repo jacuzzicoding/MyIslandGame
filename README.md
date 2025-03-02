@@ -1,24 +1,93 @@
-# 🏝️ Island Survival
+# 🏝️ MyIslandGame
 
-A pocket-sized survival game combining resource management with evolving ecosystems. Built with MonoGame and C#.
+An island-based survival and ecosystem simulation game where players explore procedurally generated islands, interact with evolving wildlife, gather resources, and build structures. Built with MonoGame and C#.
+
+![Current Version](https://img.shields.io/badge/version-0.0.1-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-early%20development-orange)
 
 ## About
-Start with a tiny island, collect resources, and expand your world. Features planned:
-- Pixel art aesthetic
-- Weather effects and day/night cycle
-- Resource generation and management
-- Evolving ecosystem
+
+MyIslandGame combines resource management with deep ecosystem simulation. Your actions have real consequences on the environment and its inhabitants.
+
+### Key Features (Planned)
+- **Living Ecosystem**: Animals and plants form a complex food web with interdependent species
+- **Entity Evolution**: Creatures evolve over generations, adapting to your actions and the environment
+- **Resource Extraction**: Everything you craft comes from the world with visible environmental impact
+- **Survival Elements**: Navigate day/night cycles, weather, and hunger systems
+- **Procedural Generation**: Explore unique islands with their own resources and challenges
+
+## Current State
+
+The game is in very early development (v0.0.1). Current features include:
+- Entity Component System architecture
+- Basic movement and collision detection
+- Simple rendering of placeholder graphics
+- Input management system
+- Game state management
+
+See the [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed information about the current version.
+
+## Screenshot
+
+*Coming soon - currently just colored rectangles for development!*
+
+## Development Roadmap
+
+### v0.0.2 (In Progress)
+- Camera system
+- Tile-based world representation
+- Day/night cycle
+- Basic UI framework
+
+### v0.0.3 (Planned)
+- Simple ecosystem with basic entities
+- Resource gathering mechanics
+- Inventory system
+
+### Future
+- Entity evolution system
+- Weather and environmental effects
+- Building mechanics
+- Advanced ecosystem simulation
 
 ## Development Setup
-1. Install [.NET 6.0 SDK](https://dotnet.microsoft.com/download) or newer
-2. Install [MonoGame](https://www.monogame.net/)
-3. Clone and run:
+
+### Prerequisites
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download) or newer
+- [MonoGame](https://www.monogame.net/)
+
+### Installation and Running
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/MyIslandGame.git
+cd MyIslandGame
+
+# Build and run
+dotnet build
 dotnet run
 ```
 
-## Status
-Early development - v0.0.1 in progress
+### Controls
+- **WASD/Arrow Keys**: Move player
+- **ESC**: Quit game
+
+## Architecture
+
+The game uses an Entity Component System (ECS) architecture:
+- **Entities**: Simple containers with unique IDs
+- **Components**: Data containers attached to entities (Transform, Sprite, etc.)
+- **Systems**: Logic that processes entities with specific component combinations
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- MonoGame community
+- Inspiration from games like Stardew Valley, Animal Crossing, and Don't Starve
 
 ---
-*More details to come as development progresses*
+
+*More details as development progresses*

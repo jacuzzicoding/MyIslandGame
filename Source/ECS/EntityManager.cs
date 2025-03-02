@@ -69,6 +69,16 @@ namespace MyIslandGame.ECS
         }
         
         /// <summary>
+        /// Gets an entity by its unique identifier.
+        /// </summary>
+        /// <param name="id">The entity identifier.</param>
+        /// <returns>The entity if found, otherwise null.</returns>
+        public Entity GetEntityById(Guid id)
+        {
+            return _entities.FirstOrDefault(e => e.Id == id);
+        }
+        
+        /// <summary>
         /// Destroys an entity, removing it from management.
         /// </summary>
         /// <param name="entity">The entity to destroy.</param>
