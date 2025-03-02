@@ -2,7 +2,7 @@
 
 An island-based survival and ecosystem simulation game where players explore procedurally generated islands, interact with evolving wildlife, gather resources, and build structures. Built with MonoGame and C#.
 
-![Current Version](https://img.shields.io/badge/version-0.0.1-blue)
+![Current Version](https://img.shields.io/badge/version-0.0.2--alpha-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-early%20development-orange)
 
@@ -19,12 +19,16 @@ MyIslandGame combines resource management with deep ecosystem simulation. Your a
 
 ## Current State
 
-The game is in very early development (v0.0.1). Current features include:
+The game is in early development (v0.0.2-alpha). Current features include:
 - Entity Component System architecture
 - Basic movement and collision detection
 - Simple rendering of placeholder graphics
 - Input management system
 - Game state management
+- Camera system with zoom and player following
+- Tile-based procedural map generation
+- Day/night cycle with visual effects
+- Simple UI framework and debug display
 
 See the [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed information about the current version.
 
@@ -34,11 +38,12 @@ See the [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed information about the 
 
 ## Development Roadmap
 
-### v0.0.2 (In Progress)
-- Camera system
-- Tile-based world representation
-- Day/night cycle
-- Basic UI framework
+### v0.0.2 (Released)
+- Camera system with zoom and player tracking
+- Tile-based procedural world generation
+- Day/night cycle with lighting effects
+- Basic UI framework with debug information
+- Player movement and world boundaries
 
 ### v0.0.3 (Planned)
 - Simple ecosystem with basic entities
@@ -60,8 +65,12 @@ See the [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed information about the 
 ### Installation and Running
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/MyIslandGame.git
+git clone https://github.com/jacuzzicoding/MyIslandGame.git
 cd MyIslandGame
+
+# Install dependencies (Mac users)
+# Mac users may need to install freetype6 library
+brew install freetype
 
 # Build and run
 dotnet build
@@ -70,6 +79,9 @@ dotnet run
 
 ### Controls
 - **WASD/Arrow Keys**: Move player
+- **+/-**: Zoom in/out camera
+- **T**: Speed up time (5x)
+- **R**: Reset time to 8:00 AM
 - **ESC**: Quit game
 
 ## Architecture
