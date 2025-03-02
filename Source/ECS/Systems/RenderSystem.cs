@@ -16,6 +16,7 @@ namespace MyIslandGame.ECS.Systems
         private readonly SpriteBatch _spriteBatch;
         private readonly GraphicsDevice _graphicsDevice;
         private Camera _camera;
+        private TimeManager _timeManager; // Add TimeManager field
         
         /// <summary>
         /// Initializes a new instance of the <see cref="RenderSystem"/> class.
@@ -40,6 +41,7 @@ namespace MyIslandGame.ECS.Systems
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             _camera = new Camera(_graphicsDevice.Viewport);
+            _timeManager = /* get reference to time manager */; // Initialize TimeManager
         }
         
         /// <summary>
@@ -81,12 +83,12 @@ namespace MyIslandGame.ECS.Systems
                     continue;
                 }
                 
-                // Draw the sprite
+                // Draw the sprite with the ambient light color applied
                 _spriteBatch.Draw(
                     sprite.Texture,
                     transform.Position,
                     sprite.SourceRectangle,
-                    sprite.Color,
+                    _timeManager.AmbientLightColor, // Apply ambient light color here
                     transform.Rotation,
                     sprite.Origin,
                     transform.Scale,
