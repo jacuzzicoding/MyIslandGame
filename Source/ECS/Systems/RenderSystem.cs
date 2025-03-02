@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.Rendering;
+using MyIslandGame.Core;
 
 namespace MyIslandGame.ECS.Systems
 {
@@ -16,22 +17,24 @@ namespace MyIslandGame.ECS.Systems
         private readonly SpriteBatch _spriteBatch;
         private readonly GraphicsDevice _graphicsDevice;
         private Camera _camera;
-        private TimeManager _timeManager; // Add TimeManager field
         
+        /// <summary>
+        /// Gets the camera used by this render system.
+        /// </summary>
+        public Camera Camera => _camera;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RenderSystem"/> class.
         /// </summary>
         /// <param name="entityManager">The entity manager.</param>
         /// <param name="spriteBatch">The sprite batch to use for rendering.</param>
         /// <param name="graphicsDevice">The graphics device.</param>
-        /// <param name="timeManager">The time manager.</param>
-        public RenderSystem(EntityManager entityManager, SpriteBatch spriteBatch, GraphicsDevice graphicsDevice, TimeManager timeManager)
+        public RenderSystem(EntityManager entityManager, SpriteBatch spriteBatch, GraphicsDevice graphicsDevice)
             : base(entityManager)
         {
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             _camera = new Camera(_graphicsDevice.Viewport);
-            _timeManager = timeManager ?? throw new ArgumentNullException(nameof(timeManager)); // Initialize TimeManager
         }
         
         /// <summary>
@@ -73,12 +76,12 @@ namespace MyIslandGame.ECS.Systems
                     continue;
                 }
                 
-                // Draw the sprite with the ambient light color applied
+                // Draw the sprite
                 _spriteBatch.Draw(
                     sprite.Texture,
                     transform.Position,
                     sprite.SourceRectangle,
-                    _timeManager.AmbientLightColor, // Apply ambient light color here
+                    sprite.Color,
                     transform.Rotation,
                     sprite.Origin,
                     transform.Scale,
