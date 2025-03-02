@@ -6,6 +6,7 @@ using MyIslandGame.ECS;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.ECS.Systems;
 using MyIslandGame.Input;
+using MyIslandGame.Rendering;
 
 namespace MyIslandGame.States
 {
@@ -25,6 +26,9 @@ namespace MyIslandGame.States
         private Entity _playerEntity;
         private Texture2D _playerTexture;
         private Texture2D _grassTexture;
+        
+        // World bounds for camera clamping
+        private Rectangle _worldBounds;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayingState"/> class.
@@ -172,6 +176,7 @@ namespace MyIslandGame.States
             if (_playerEntity != null)
             {
                 var velocity = _playerEntity.GetComponent<VelocityComponent>();
+                var transform = _playerEntity.GetComponent<TransformComponent>();
                 
                 Vector2 direction = Vector2.Zero;
                 
@@ -203,6 +208,23 @@ namespace MyIslandGame.States
                 
                 // Apply movement to velocity
                 velocity.Velocity = direction * velocity.MaxSpeed;
+                
+                // Update camera to follow player
+                _renderSystem.Camera.FollowTarget(transform.Position, 5f);
+                
+                // Clamp camera to world bounds
+                _renderSystem.Camera.ClampToBounds(_worldBounds);
+            }
+            
+            // Handle camera zoom with keyboard controls (for testing)
+            if (Keyboard.GetState().IsKeyDown(Keys.OemPlus) || Keyboard.GetState().IsKeyDown(Keys.Add))
+            {
+                _renderSystem.Camera.ZoomBy(0.02f);
+            }
+            
+            if (Keyboard.GetState().IsKeyDown(Keys.OemMinus) || Keyboard.GetState().IsKeyDown(Keys.Subtract))
+            {
+                _renderSystem.Camera.ZoomBy(-0.02f);
             }
             
             // Update entity manager (and all systems)
@@ -220,12 +242,26 @@ namespace MyIslandGame.States
             
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            // Draw grass tiles
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+            // Define world size (for now, will be replaced with proper world generation)
+            int worldWidth = 1600;
+            int worldHeight = 1200;
+            _worldBounds = new Rectangle(-200, -200, worldWidth, worldHeight);
             
-            for (int x = 0; x < GraphicsDevice.Viewport.Width; x += 64)
+            // Draw grass tiles
+            _spriteBatch.Begin(
+                SpriteSortMode.Deferred, 
+                BlendState.AlphaBlend, 
+                SamplerState.PointClamp, 
+                null, 
+                null, 
+                null, 
+                _renderSystem.Camera.TransformMatrix);
+            
+            // Draw grass tiles for the entire world
+            int tileSize = 64;
+            for (int x = _worldBounds.Left; x < _worldBounds.Right; x += tileSize)
             {
-                for (int y = 0; y < GraphicsDevice.Viewport.Height; y += 64)
+                for (int y = _worldBounds.Top; y < _worldBounds.Bottom; y += tileSize)
                 {
                     _spriteBatch.Draw(_grassTexture, new Vector2(x, y), Color.White);
                 }
