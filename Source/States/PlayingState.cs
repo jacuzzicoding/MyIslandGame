@@ -10,6 +10,7 @@ using MyIslandGame.ECS.Systems;
 using MyIslandGame.Input;
 using MyIslandGame.Rendering;
 using MyIslandGame.UI;
+using MyIslandGame.World;
 
 namespace MyIslandGame.States
 {
@@ -39,6 +40,10 @@ namespace MyIslandGame.States
         private SpriteFont _debugFont;
         private Texture2D _lightOverlayTexture;
         
+        // World and map
+        private TileMap _tileMap;
+        private WorldGenerator _worldGenerator;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayingState"/> class.
         /// </summary>
@@ -55,6 +60,9 @@ namespace MyIslandGame.States
             
             // Initialize UI manager
             _uiManager = new UIManager(game.GraphicsDevice);
+            
+            // Initialize world generator
+            _worldGenerator = new WorldGenerator(game.GraphicsDevice);
         }
         
         /// <summary>
@@ -121,8 +129,15 @@ namespace MyIslandGame.States
             // Create player entity
             _playerEntity = _entityManager.CreateEntity();
             
-            var playerTransform = new TransformComponent(
-                new Vector2(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2));
+            // Generate the tile map (25x25 tiles, 64 pixels each)
+            _tileMap = _worldGenerator.GenerateTestMap(30, 30, 64);
+            
+            // Set world bounds based on the tile map
+            _worldBounds = _tileMap.GetWorldBounds();
+            
+            // Position player in the center of the map
+            Vector2 mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
+            var playerTransform = new TransformComponent(mapCenter);
             
             var playerSprite = new SpriteComponent(_playerTexture)
             {
@@ -244,6 +259,32 @@ namespace MyIslandGame.States
                 // Apply movement to velocity
                 velocity.Velocity = direction * velocity.MaxSpeed;
                 
+                // Check for tile collisions
+                Vector2 nextPosition = transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                Point nextTile = _tileMap.WorldToTile(nextPosition);
+                
+                // If the next position would be on an impassable tile, stop movement in that direction
+                if (!_tileMap.IsTilePassable(nextTile.X, nextTile.Y))
+                {
+                    // Try horizontal movement only
+                    Vector2 horizontalMove = new Vector2(velocity.Velocity.X, 0) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    Point horizontalTile = _tileMap.WorldToTile(transform.Position + horizontalMove);
+                    
+                    if (!_tileMap.IsTilePassable(horizontalTile.X, horizontalTile.Y))
+                    {
+                        velocity.Velocity = new Vector2(0, velocity.Velocity.Y);
+                    }
+                    
+                    // Try vertical movement only
+                    Vector2 verticalMove = new Vector2(0, velocity.Velocity.Y) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    Point verticalTile = _tileMap.WorldToTile(transform.Position + verticalMove);
+                    
+                    if (!_tileMap.IsTilePassable(verticalTile.X, verticalTile.Y))
+                    {
+                        velocity.Velocity = new Vector2(velocity.Velocity.X, 0);
+                    }
+                }
+                
                 // Update camera to follow player
                 _renderSystem.Camera.FollowTarget(transform.Position, 5f);
                 
@@ -293,12 +334,14 @@ namespace MyIslandGame.States
             
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            // Define world size (for now, will be replaced with proper world generation)
-            int worldWidth = 1600;
-            int worldHeight = 1200;
-            _worldBounds = new Rectangle(-200, -200, worldWidth, worldHeight);
+            // Define the view rectangle based on camera position and viewport
+            Rectangle viewRect = new Rectangle(
+                (int)(_renderSystem.Camera.Position.X - GraphicsDevice.Viewport.Width / (2f * _renderSystem.Camera.Zoom)),
+                (int)(_renderSystem.Camera.Position.Y - GraphicsDevice.Viewport.Height / (2f * _renderSystem.Camera.Zoom)),
+                (int)(GraphicsDevice.Viewport.Width / _renderSystem.Camera.Zoom),
+                (int)(GraphicsDevice.Viewport.Height / _renderSystem.Camera.Zoom));
             
-            // Draw grass tiles
+            // Draw the tile map
             _spriteBatch.Begin(
                 SpriteSortMode.Deferred, 
                 BlendState.AlphaBlend, 
@@ -308,15 +351,7 @@ namespace MyIslandGame.States
                 null, 
                 _renderSystem.Camera.TransformMatrix);
             
-            // Draw grass tiles for the entire world
-            int tileSize = 64;
-            for (int x = _worldBounds.Left; x < _worldBounds.Right; x += tileSize)
-            {
-                for (int y = _worldBounds.Top; y < _worldBounds.Bottom; y += tileSize)
-                {
-                    _spriteBatch.Draw(_grassTexture, new Vector2(x, y), Color.White);
-                }
-            }
+            _tileMap.Draw(_spriteBatch, viewRect);
             
             _spriteBatch.End();
             
@@ -354,6 +389,8 @@ namespace MyIslandGame.States
                     $"Camera Position: {_renderSystem.Camera.Position.X:F0}, {_renderSystem.Camera.Position.Y:F0}",
                     $"Camera Zoom: {_renderSystem.Camera.Zoom:F2}",
                     $"Player Position: {_playerEntity.GetComponent<TransformComponent>().Position.X:F0}, {_playerEntity.GetComponent<TransformComponent>().Position.Y:F0}",
+                    $"Player Tile: {_tileMap.WorldToTile(_playerEntity.GetComponent<TransformComponent>().Position)}",
+                    $"Map Size: {_tileMap.Width}x{_tileMap.Height} tiles ({_tileMap.PixelWidth}x{_tileMap.PixelHeight} pixels)",
                     $"Controls: T=Fast time, R=Reset to 8:00 AM",
                     $"Controls: +/- = Zoom, WASD = Move"
                 };
