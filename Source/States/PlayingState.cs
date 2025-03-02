@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MyIslandGame.Core;
 using MyIslandGame.ECS;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.ECS.Systems;
 using MyIslandGame.Input;
 using MyIslandGame.Rendering;
+using MyIslandGame.UI;
 
 namespace MyIslandGame.States
 {
@@ -30,6 +33,12 @@ namespace MyIslandGame.States
         // World bounds for camera clamping
         private Rectangle _worldBounds;
         
+        // Time and UI management
+        private TimeManager _timeManager;
+        private UIManager _uiManager;
+        private SpriteFont _debugFont;
+        private Texture2D _lightOverlayTexture;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayingState"/> class.
         /// </summary>
@@ -40,6 +49,12 @@ namespace MyIslandGame.States
         {
             _entityManager = new EntityManager();
             _inputManager = new InputManager();
+            
+            // Initialize time manager (24 minutes per day with 20 real seconds per game day)
+            _timeManager = new TimeManager(1440f, 72f, 480f); // Start at 8:00 AM
+            
+            // Initialize UI manager
+            _uiManager = new UIManager(game.GraphicsDevice);
         }
         
         /// <summary>
@@ -82,6 +97,26 @@ namespace MyIslandGame.States
             // Create textures
             _playerTexture = CreateColoredTexture(32, 32, Color.Blue);
             _grassTexture = CreateColoredTexture(64, 64, Color.Green);
+            
+            // Create a white texture for lighting effects
+            _lightOverlayTexture = CreateColoredTexture(1, 1, Color.White);
+            
+            // Load font (or create a fallback)
+            try
+            {
+                _debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
+            }
+            catch (Exception)
+            {
+                // Fallback: Create a temporary debug font message
+                Console.WriteLine("Warning: DebugFont not found. Add a SpriteFont to Content/Fonts/DebugFont");
+            }
+            
+            // Set the font in the UI manager
+            if (_debugFont != null)
+            {
+                _uiManager.SetDefaultFont(_debugFont);
+            }
             
             // Create player entity
             _playerEntity = _entityManager.CreateEntity();
@@ -227,6 +262,22 @@ namespace MyIslandGame.States
                 _renderSystem.Camera.ZoomBy(-0.02f);
             }
             
+            // Update time manager
+            _timeManager.Update(gameTime);
+            
+            // Time control keys for testing
+            if (Keyboard.GetState().IsKeyDown(Keys.T))
+            {
+                // Fast forward time (5x speed)
+                _timeManager.Update(new GameTime(gameTime.TotalGameTime, TimeSpan.FromSeconds(gameTime.ElapsedGameTime.TotalSeconds * 4)));
+            }
+            
+            if (Keyboard.GetState().IsKeyDown(Keys.R))
+            {
+                // Reset time to 8:00 AM
+                _timeManager.SetTime(8, 0);
+            }
+            
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
         }
@@ -271,6 +322,44 @@ namespace MyIslandGame.States
             
             // Draw entities using the render system
             _renderSystem.Update(gameTime);
+            
+            // Apply day/night lighting overlay
+            Color ambientColor = _timeManager.AmbientLightColor;
+            float alpha = 1.0f - _timeManager.SunIntensity * 0.8f; // Allow some visibility at night
+            Color overlayColor = new Color(
+                (byte)(255 - ambientColor.R * (1 - alpha)),
+                (byte)(255 - ambientColor.G * (1 - alpha)),
+                (byte)(255 - ambientColor.B * (1 - alpha)),
+                (byte)(alpha * 180)); // Semi-transparent
+            
+            // Draw lighting overlay if it's not full daylight
+            if (alpha > 0.05f)
+            {
+                _spriteBatch.Begin();
+                _spriteBatch.Draw(
+                    _lightOverlayTexture,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    overlayColor);
+                _spriteBatch.End();
+            }
+            
+            // Draw debug information
+            if (_debugFont != null)
+            {
+                List<string> debugInfo = new List<string>
+                {
+                    $"Time: {_timeManager.GetTimeString()} ({_timeManager.CurrentTimeOfDay})",
+                    $"Day: {_timeManager.CurrentDay}",
+                    $"Sun Intensity: {_timeManager.SunIntensity:F2}",
+                    $"Camera Position: {_renderSystem.Camera.Position.X:F0}, {_renderSystem.Camera.Position.Y:F0}",
+                    $"Camera Zoom: {_renderSystem.Camera.Zoom:F2}",
+                    $"Player Position: {_playerEntity.GetComponent<TransformComponent>().Position.X:F0}, {_playerEntity.GetComponent<TransformComponent>().Position.Y:F0}",
+                    $"Controls: T=Fast time, R=Reset to 8:00 AM",
+                    $"Controls: +/- = Zoom, WASD = Move"
+                };
+                
+                _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
+            }
         }
         
         /// <summary>
