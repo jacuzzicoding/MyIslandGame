@@ -1,51 +1,64 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MyIslandGame.States;
 
-namespace MyIslandGame;
-
-public class Game1 : Game
+namespace MyIslandGame
 {
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
-
-    public Game1()
+    public class Game1 : Game
     {
-        _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
-    }
+        private GraphicsDeviceManager _graphics;
+        private SpriteBatch _spriteBatch;
+        private GameStateManager _stateManager;
 
-    protected override void Initialize()
-    {
-        // TODO: Add your initialization logic here
+        public Game1()
+        {
+            _graphics = new GraphicsDeviceManager(this);
+            Content.RootDirectory = "Content";
+            IsMouseVisible = true;
+            
+            // Set window size (for development)
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
+        }
 
-        base.Initialize();
-    }
+        protected override void Initialize()
+        {
+            // Create the state manager
+            _stateManager = new GameStateManager(this);
+            
+            base.Initialize();
+        }
 
-    protected override void LoadContent()
-    {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
+        protected override void LoadContent()
+        {
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            
+            // Create and add game states
+            var playingState = new PlayingState(this, _stateManager);
+            _stateManager.AddState<PlayingState>(playingState);
+            
+            // Set the initial state
+            _stateManager.ChangeState<PlayingState>();
+        }
 
-        // TODO: use this.Content to load your game content here
-    }
+        protected override void Update(GameTime gameTime)
+        {
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
 
-    protected override void Update(GameTime gameTime)
-    {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
+            // Update the current state
+            _stateManager.Update(gameTime);
 
-        // TODO: Add your update logic here
+            base.Update(gameTime);
+        }
 
-        base.Update(gameTime);
-    }
+        protected override void Draw(GameTime gameTime)
+        {
+            // Draw the current state
+            _stateManager.Draw(gameTime, _spriteBatch);
 
-    protected override void Draw(GameTime gameTime)
-    {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        // TODO: Add your drawing code here
-
-        base.Draw(gameTime);
+            base.Draw(gameTime);
+        }
     }
 }
