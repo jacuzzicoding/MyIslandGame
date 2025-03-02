@@ -12,10 +12,10 @@ namespace MyIslandGame.States
         private readonly RenderSystem _renderSystem;
 
         public PlayingState(Game1 game, GameStateManager stateManager, TimeManager timeManager) : base(game, stateManager)
+        {
+            _timeManager = timeManager;
             var entityManager = new EntityManager();
-            _renderSystem = new RenderSystem(entityManager, spriteBatch, game.GraphicsDevice, _timeManager);
-            var entityManager = new EntityManager();
-            _renderSystem = new RenderSystem(entityManager, game.SpriteBatch, game.GraphicsDevice, _timeManager);
+            _renderSystem = new RenderSystem(entityManager, game.Content, game.GraphicsDevice, _timeManager);
         }
 
         public override void Update(GameTime gameTime)
