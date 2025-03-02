@@ -24,24 +24,14 @@ namespace MyIslandGame.ECS.Systems
         /// <param name="entityManager">The entity manager.</param>
         /// <param name="spriteBatch">The sprite batch to use for rendering.</param>
         /// <param name="graphicsDevice">The graphics device.</param>
-        /// <summary>
-        /// Gets the camera used by this render system.
-        /// </summary>
-        public Camera Camera => _camera;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RenderSystem"/> class.
-        /// </summary>
-        /// <param name="entityManager">The entity manager.</param>
-        /// <param name="spriteBatch">The sprite batch to use for rendering.</param>
-        /// <param name="graphicsDevice">The graphics device.</param>
-        public RenderSystem(EntityManager entityManager, SpriteBatch spriteBatch, GraphicsDevice graphicsDevice)
+        /// <param name="timeManager">The time manager.</param>
+        public RenderSystem(EntityManager entityManager, SpriteBatch spriteBatch, GraphicsDevice graphicsDevice, TimeManager timeManager)
             : base(entityManager)
         {
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             _camera = new Camera(_graphicsDevice.Viewport);
-            _timeManager = /* get reference to time manager */; // Initialize TimeManager
+            _timeManager = timeManager ?? throw new ArgumentNullException(nameof(timeManager)); // Initialize TimeManager
         }
         
         /// <summary>
