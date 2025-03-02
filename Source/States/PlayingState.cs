@@ -285,6 +285,50 @@ namespace MyIslandGame.States
                     }
                 }
                 
+                // Prevent player from going outside world boundaries
+                Rectangle bounds = _worldBounds;
+                Vector2 nextPos = transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                
+                // Calculate player boundaries considering size
+                float playerHalfWidth = _playerEntity.GetComponent<ColliderComponent>().Size.X / 2f;
+                float playerHalfHeight = _playerEntity.GetComponent<ColliderComponent>().Size.Y / 2f;
+                
+                // Create boundary rectangle with padding for player size
+                Rectangle playerBounds = new Rectangle(
+                    bounds.X + (int)playerHalfWidth,
+                    bounds.Y + (int)playerHalfHeight,
+                    bounds.Width - (int)playerHalfWidth * 2,
+                    bounds.Height - (int)playerHalfHeight * 2);
+                
+                // Clamp player position to boundaries
+                if (nextPos.X < playerBounds.Left)
+                {
+                    nextPos.X = playerBounds.Left;
+                    velocity.Velocity = new Vector2(0, velocity.Velocity.Y);
+                }
+                else if (nextPos.X > playerBounds.Right)
+                {
+                    nextPos.X = playerBounds.Right;
+                    velocity.Velocity = new Vector2(0, velocity.Velocity.Y);
+                }
+                
+                if (nextPos.Y < playerBounds.Top)
+                {
+                    nextPos.Y = playerBounds.Top;
+                    velocity.Velocity = new Vector2(velocity.Velocity.X, 0);
+                }
+                else if (nextPos.Y > playerBounds.Bottom)
+                {
+                    nextPos.Y = playerBounds.Bottom;
+                    velocity.Velocity = new Vector2(velocity.Velocity.X, 0);
+                }
+                
+                // Set position directly if it needed to be clamped
+                if (nextPos != transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds)
+                {
+                    transform.Position = nextPos;
+                }
+                
                 // Update camera to follow player
                 _renderSystem.Camera.FollowTarget(transform.Position, 5f);
                 
@@ -362,9 +406,9 @@ namespace MyIslandGame.States
             Color ambientColor = _gameTimeManager.AmbientLightColor;
             float alpha = 1.0f - _gameTimeManager.SunIntensity * 0.8f; // Allow some visibility at night
             Color overlayColor = new Color(
-                (byte)(255 - ambientColor.R * (1 - alpha)),
-                (byte)(255 - ambientColor.G * (1 - alpha)),
-                (byte)(255 - ambientColor.B * (1 - alpha)),
+                (byte)(10), // Dark blue for night
+                (byte)(10),
+                (byte)(35),
                 (byte)(alpha * 180)); // Semi-transparent
             
             // Draw lighting overlay if it's not full daylight
