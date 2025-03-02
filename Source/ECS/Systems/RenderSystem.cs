@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.Rendering;
+using MyIslandGame.Core;
 
 namespace MyIslandGame.ECS.Systems
 {
@@ -17,12 +18,6 @@ namespace MyIslandGame.ECS.Systems
         private readonly GraphicsDevice _graphicsDevice;
         private Camera _camera;
         
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RenderSystem"/> class.
-        /// </summary>
-        /// <param name="entityManager">The entity manager.</param>
-        /// <param name="spriteBatch">The sprite batch to use for rendering.</param>
-        /// <param name="graphicsDevice">The graphics device.</param>
         /// <summary>
         /// Gets the camera used by this render system.
         /// </summary>

@@ -10,6 +10,7 @@ namespace MyIslandGame
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         private GameStateManager _stateManager;
+        private TimeManager _timeManager; // Add TimeManager field
 
         public Game1()
         {
@@ -27,6 +28,9 @@ namespace MyIslandGame
             // Create the state manager
             _stateManager = new GameStateManager(this);
             
+            // Initialize TimeManager
+            _timeManager = new TimeManager();
+            
             base.Initialize();
         }
 
@@ -35,7 +39,7 @@ namespace MyIslandGame
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
             // Create and add game states
-            var playingState = new PlayingState(this, _stateManager);
+            var playingState = new PlayingState(this, _stateManager); // Fix the constructor call - use only the parameters required for your PlayingState constructor
             _stateManager.AddState<PlayingState>(playingState);
             
             // Set the initial state

@@ -31,7 +31,7 @@ namespace MyIslandGame.ECS.Components
         /// <summary>
         /// Gets or sets a value indicating whether collision is enabled.
         /// </summary>
-        public bool Enabled { get; set; } = true;
+        public new bool Enabled { get; set; } = true;
         
         /// <summary>
         /// Gets the bounding rectangle in world space based on the entity's position.

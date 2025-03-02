@@ -26,7 +26,7 @@ namespace MyIslandGame.ECS.Components
         /// <summary>
         /// Gets or sets a value indicating whether physics calculations should be applied.
         /// </summary>
-        public bool Enabled { get; set; } = true;
+        public new bool Enabled { get; set; } = true;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="VelocityComponent"/> class.

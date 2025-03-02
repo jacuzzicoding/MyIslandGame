@@ -39,3 +39,4 @@ msbuild.wrn
 !.vscode/launch.json
 !.vscode/extensions.json
 obj/Debug/net8.0/MyIslandGame.AssemblyInfo.cs
+States/PlayingState.cs.bak

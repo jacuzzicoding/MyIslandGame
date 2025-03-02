@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MyIslandGame.Core;
 using MyIslandGame.ECS;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.ECS.Systems;
 using MyIslandGame.Input;
 using MyIslandGame.Rendering;
+using MyIslandGame.UI;
+using MyIslandGame.World;
 
 namespace MyIslandGame.States
 {
@@ -30,6 +34,16 @@ namespace MyIslandGame.States
         // World bounds for camera clamping
         private Rectangle _worldBounds;
         
+        // Time and UI management
+        private TimeManager _gameTimeManager;
+        private UIManager _uiManager;
+        private SpriteFont _debugFont;
+        private Texture2D _lightOverlayTexture;
+        
+        // World and map
+        private TileMap _tileMap;
+        private WorldGenerator _worldGenerator;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayingState"/> class.
         /// </summary>
@@ -40,6 +54,15 @@ namespace MyIslandGame.States
         {
             _entityManager = new EntityManager();
             _inputManager = new InputManager();
+            
+            // Initialize time manager (24 minutes per day with 20 real seconds per game day)
+            _gameTimeManager = new TimeManager(1440f, 72f, 480f); // Start at 8:00 AM
+            
+            // Initialize UI manager
+            _uiManager = new UIManager(game.GraphicsDevice);
+            
+            // Initialize world generator
+            _worldGenerator = new WorldGenerator(game.GraphicsDevice);
         }
         
         /// <summary>
@@ -83,11 +106,38 @@ namespace MyIslandGame.States
             _playerTexture = CreateColoredTexture(32, 32, Color.Blue);
             _grassTexture = CreateColoredTexture(64, 64, Color.Green);
             
+            // Create a white texture for lighting effects
+            _lightOverlayTexture = CreateColoredTexture(1, 1, Color.White);
+            
+            // Load font (or create a fallback)
+            try
+            {
+                _debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
+            }
+            catch (Exception)
+            {
+                // Fallback: Create a temporary debug font message
+                Console.WriteLine("Warning: DebugFont not found. Add a SpriteFont to Content/Fonts/DebugFont");
+            }
+            
+            // Set the font in the UI manager
+            if (_debugFont != null)
+            {
+                _uiManager.SetDefaultFont(_debugFont);
+            }
+            
             // Create player entity
             _playerEntity = _entityManager.CreateEntity();
             
-            var playerTransform = new TransformComponent(
-                new Vector2(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2));
+            // Generate the tile map (25x25 tiles, 64 pixels each)
+            _tileMap = _worldGenerator.GenerateTestMap(30, 30, 64);
+            
+            // Set world bounds based on the tile map
+            _worldBounds = _tileMap.GetWorldBounds();
+            
+            // Position player in the center of the map
+            Vector2 mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
+            var playerTransform = new TransformComponent(mapCenter);
             
             var playerSprite = new SpriteComponent(_playerTexture)
             {
@@ -209,6 +259,76 @@ namespace MyIslandGame.States
                 // Apply movement to velocity
                 velocity.Velocity = direction * velocity.MaxSpeed;
                 
+                // Check for tile collisions
+                Vector2 nextPosition = transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                Point nextTile = _tileMap.WorldToTile(nextPosition);
+                
+                // If the next position would be on an impassable tile, stop movement in that direction
+                if (!_tileMap.IsTilePassable(nextTile.X, nextTile.Y))
+                {
+                    // Try horizontal movement only
+                    Vector2 horizontalMove = new Vector2(velocity.Velocity.X, 0) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    Point horizontalTile = _tileMap.WorldToTile(transform.Position + horizontalMove);
+                    
+                    if (!_tileMap.IsTilePassable(horizontalTile.X, horizontalTile.Y))
+                    {
+                        velocity.Velocity = new Vector2(0, velocity.Velocity.Y);
+                    }
+                    
+                    // Try vertical movement only
+                    Vector2 verticalMove = new Vector2(0, velocity.Velocity.Y) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    Point verticalTile = _tileMap.WorldToTile(transform.Position + verticalMove);
+                    
+                    if (!_tileMap.IsTilePassable(verticalTile.X, verticalTile.Y))
+                    {
+                        velocity.Velocity = new Vector2(velocity.Velocity.X, 0);
+                    }
+                }
+                
+                // Prevent player from going outside world boundaries
+                Rectangle bounds = _worldBounds;
+                Vector2 nextPos = transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                
+                // Calculate player boundaries considering size
+                float playerHalfWidth = _playerEntity.GetComponent<ColliderComponent>().Size.X / 2f;
+                float playerHalfHeight = _playerEntity.GetComponent<ColliderComponent>().Size.Y / 2f;
+                
+                // Create boundary rectangle with padding for player size
+                Rectangle playerBounds = new Rectangle(
+                    bounds.X + (int)playerHalfWidth,
+                    bounds.Y + (int)playerHalfHeight,
+                    bounds.Width - (int)playerHalfWidth * 2,
+                    bounds.Height - (int)playerHalfHeight * 2);
+                
+                // Clamp player position to boundaries
+                if (nextPos.X < playerBounds.Left)
+                {
+                    nextPos.X = playerBounds.Left;
+                    velocity.Velocity = new Vector2(0, velocity.Velocity.Y);
+                }
+                else if (nextPos.X > playerBounds.Right)
+                {
+                    nextPos.X = playerBounds.Right;
+                    velocity.Velocity = new Vector2(0, velocity.Velocity.Y);
+                }
+                
+                if (nextPos.Y < playerBounds.Top)
+                {
+                    nextPos.Y = playerBounds.Top;
+                    velocity.Velocity = new Vector2(velocity.Velocity.X, 0);
+                }
+                else if (nextPos.Y > playerBounds.Bottom)
+                {
+                    nextPos.Y = playerBounds.Bottom;
+                    velocity.Velocity = new Vector2(velocity.Velocity.X, 0);
+                }
+                
+                // Set position directly if it needed to be clamped
+                if (nextPos != transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds)
+                {
+                    transform.Position = nextPos;
+                }
+                
                 // Update camera to follow player
                 _renderSystem.Camera.FollowTarget(transform.Position, 5f);
                 
@@ -227,6 +347,22 @@ namespace MyIslandGame.States
                 _renderSystem.Camera.ZoomBy(-0.02f);
             }
             
+            // Update time manager
+            _gameTimeManager.Update(gameTime);
+            
+            // Time control keys for testing
+            if (Keyboard.GetState().IsKeyDown(Keys.T))
+            {
+                // Fast forward time (5x speed)
+                _gameTimeManager.Update(new GameTime(gameTime.TotalGameTime, TimeSpan.FromSeconds(gameTime.ElapsedGameTime.TotalSeconds * 4)));
+            }
+            
+            if (Keyboard.GetState().IsKeyDown(Keys.R))
+            {
+                // Reset time to 8:00 AM
+                _gameTimeManager.SetTime(8, 0);
+            }
+            
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
         }
@@ -242,12 +378,14 @@ namespace MyIslandGame.States
             
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            // Define world size (for now, will be replaced with proper world generation)
-            int worldWidth = 1600;
-            int worldHeight = 1200;
-            _worldBounds = new Rectangle(-200, -200, worldWidth, worldHeight);
+            // Define the view rectangle based on camera position and viewport
+            Rectangle viewRect = new Rectangle(
+                (int)(_renderSystem.Camera.Position.X - GraphicsDevice.Viewport.Width / (2f * _renderSystem.Camera.Zoom)),
+                (int)(_renderSystem.Camera.Position.Y - GraphicsDevice.Viewport.Height / (2f * _renderSystem.Camera.Zoom)),
+                (int)(GraphicsDevice.Viewport.Width / _renderSystem.Camera.Zoom),
+                (int)(GraphicsDevice.Viewport.Height / _renderSystem.Camera.Zoom));
             
-            // Draw grass tiles
+            // Draw the tile map
             _spriteBatch.Begin(
                 SpriteSortMode.Deferred, 
                 BlendState.AlphaBlend, 
@@ -257,20 +395,52 @@ namespace MyIslandGame.States
                 null, 
                 _renderSystem.Camera.TransformMatrix);
             
-            // Draw grass tiles for the entire world
-            int tileSize = 64;
-            for (int x = _worldBounds.Left; x < _worldBounds.Right; x += tileSize)
-            {
-                for (int y = _worldBounds.Top; y < _worldBounds.Bottom; y += tileSize)
-                {
-                    _spriteBatch.Draw(_grassTexture, new Vector2(x, y), Color.White);
-                }
-            }
+            _tileMap.Draw(_spriteBatch, viewRect);
             
             _spriteBatch.End();
             
             // Draw entities using the render system
             _renderSystem.Update(gameTime);
+            
+            // Apply day/night lighting overlay
+            Color ambientColor = _gameTimeManager.AmbientLightColor;
+            float alpha = 1.0f - _gameTimeManager.SunIntensity * 0.8f; // Allow some visibility at night
+            Color overlayColor = new Color(
+                (byte)(10), // Dark blue for night
+                (byte)(10),
+                (byte)(35),
+                (byte)(alpha * 180)); // Semi-transparent
+            
+            // Draw lighting overlay if it's not full daylight
+            if (alpha > 0.05f)
+            {
+                _spriteBatch.Begin();
+                _spriteBatch.Draw(
+                    _lightOverlayTexture,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    overlayColor);
+                _spriteBatch.End();
+            }
+            
+            // Draw debug information
+            if (_debugFont != null)
+            {
+                List<string> debugInfo = new List<string>
+                {
+                    $"Time: {_gameTimeManager.GetTimeString()} ({_gameTimeManager.CurrentTimeOfDay})",
+                    $"Day: {_gameTimeManager.CurrentDay}",
+                    $"Sun Intensity: {_gameTimeManager.SunIntensity:F2}",
+                    $"Camera Position: {_renderSystem.Camera.Position.X:F0}, {_renderSystem.Camera.Position.Y:F0}",
+                    $"Camera Zoom: {_renderSystem.Camera.Zoom:F2}",
+                    $"Player Position: {_playerEntity.GetComponent<TransformComponent>().Position.X:F0}, {_playerEntity.GetComponent<TransformComponent>().Position.Y:F0}",
+                    $"Player Tile: {_tileMap.WorldToTile(_playerEntity.GetComponent<TransformComponent>().Position)}",
+                    $"Map Size: {_tileMap.Width}x{_tileMap.Height} tiles ({_tileMap.PixelWidth}x{_tileMap.PixelHeight} pixels)",
+                    $"Controls: T=Fast time, R=Reset to 8:00 AM",
+                    $"Controls: +/- = Zoom, WASD = Move"
+                };
+                
+                _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
+            }
         }
         
         /// <summary>
