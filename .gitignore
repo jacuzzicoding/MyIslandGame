@@ -1,8 +1,40 @@
-obj/Debug/net8.0/MyIslandGame.GeneratedMSBuildEditorConfig.editorconfig
-obj/Debug/net8.0/MyIslandGame.csproj.AssemblyReference.cache
-obj/Debug/net8.0/MyIslandGame.assets.cache
-obj/Debug/net8.0/MyIslandGame.AssemblyInfoInputs.cache
-obj/MyIslandGame.csproj.nuget.g.targets
-obj/MyIslandGame.csproj.nuget.g.props
-obj/Debug/net8.0/MyIslandGame.AssemblyInfo.cs
-obj/Debug/net8.0/MyIslandGame.AssemblyInfo.cs
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]uild/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
