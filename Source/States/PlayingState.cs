@@ -35,7 +35,7 @@ namespace MyIslandGame.States
         private Rectangle _worldBounds;
         
         // Time and UI management
-        private TimeManager _timeManager;
+        private TimeManager _gameTimeManager;
         private UIManager _uiManager;
         private SpriteFont _debugFont;
         private Texture2D _lightOverlayTexture;
@@ -56,7 +56,7 @@ namespace MyIslandGame.States
             _inputManager = new InputManager();
             
             // Initialize time manager (24 minutes per day with 20 real seconds per game day)
-            _timeManager = new TimeManager(1440f, 72f, 480f); // Start at 8:00 AM
+            _gameTimeManager = new TimeManager(1440f, 72f, 480f); // Start at 8:00 AM
             
             // Initialize UI manager
             _uiManager = new UIManager(game.GraphicsDevice);
@@ -304,19 +304,19 @@ namespace MyIslandGame.States
             }
             
             // Update time manager
-            _timeManager.Update(gameTime);
+            _gameTimeManager.Update(gameTime);
             
             // Time control keys for testing
             if (Keyboard.GetState().IsKeyDown(Keys.T))
             {
                 // Fast forward time (5x speed)
-                _timeManager.Update(new GameTime(gameTime.TotalGameTime, TimeSpan.FromSeconds(gameTime.ElapsedGameTime.TotalSeconds * 4)));
+                _gameTimeManager.Update(new GameTime(gameTime.TotalGameTime, TimeSpan.FromSeconds(gameTime.ElapsedGameTime.TotalSeconds * 4)));
             }
             
             if (Keyboard.GetState().IsKeyDown(Keys.R))
             {
                 // Reset time to 8:00 AM
-                _timeManager.SetTime(8, 0);
+                _gameTimeManager.SetTime(8, 0);
             }
             
             // Update entity manager (and all systems)
@@ -359,8 +359,8 @@ namespace MyIslandGame.States
             _renderSystem.Update(gameTime);
             
             // Apply day/night lighting overlay
-            Color ambientColor = _timeManager.AmbientLightColor;
-            float alpha = 1.0f - _timeManager.SunIntensity * 0.8f; // Allow some visibility at night
+            Color ambientColor = _gameTimeManager.AmbientLightColor;
+            float alpha = 1.0f - _gameTimeManager.SunIntensity * 0.8f; // Allow some visibility at night
             Color overlayColor = new Color(
                 (byte)(255 - ambientColor.R * (1 - alpha)),
                 (byte)(255 - ambientColor.G * (1 - alpha)),
@@ -383,9 +383,9 @@ namespace MyIslandGame.States
             {
                 List<string> debugInfo = new List<string>
                 {
-                    $"Time: {_timeManager.GetTimeString()} ({_timeManager.CurrentTimeOfDay})",
-                    $"Day: {_timeManager.CurrentDay}",
-                    $"Sun Intensity: {_timeManager.SunIntensity:F2}",
+                    $"Time: {_gameTimeManager.GetTimeString()} ({_gameTimeManager.CurrentTimeOfDay})",
+                    $"Day: {_gameTimeManager.CurrentDay}",
+                    $"Sun Intensity: {_gameTimeManager.SunIntensity:F2}",
                     $"Camera Position: {_renderSystem.Camera.Position.X:F0}, {_renderSystem.Camera.Position.Y:F0}",
                     $"Camera Zoom: {_renderSystem.Camera.Zoom:F2}",
                     $"Player Position: {_playerEntity.GetComponent<TransformComponent>().Position.X:F0}, {_playerEntity.GetComponent<TransformComponent>().Position.Y:F0}",
