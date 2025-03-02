@@ -39,7 +39,7 @@ namespace MyIslandGame
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
             // Create and add game states
-            var playingState = new PlayingState(this, _stateManager, _timeManager); // Pass TimeManager to PlayingState
+            var playingState = new PlayingState(this, _stateManager); // Fix the constructor call - use only the parameters required for your PlayingState constructor
             _stateManager.AddState<PlayingState>(playingState);
             
             // Set the initial state
