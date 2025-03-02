@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MyIslandGame.ECS.Components;
+using MyIslandGame.Rendering;
 
 namespace MyIslandGame.ECS.Systems
 {
@@ -14,7 +15,19 @@ namespace MyIslandGame.ECS.Systems
     {
         private readonly SpriteBatch _spriteBatch;
         private readonly GraphicsDevice _graphicsDevice;
+        private Camera _camera;
         
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RenderSystem"/> class.
+        /// </summary>
+        /// <param name="entityManager">The entity manager.</param>
+        /// <param name="spriteBatch">The sprite batch to use for rendering.</param>
+        /// <param name="graphicsDevice">The graphics device.</param>
+        /// <summary>
+        /// Gets the camera used by this render system.
+        /// </summary>
+        public Camera Camera => _camera;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RenderSystem"/> class.
         /// </summary>
@@ -26,6 +39,7 @@ namespace MyIslandGame.ECS.Systems
         {
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
+            _camera = new Camera(_graphicsDevice.Viewport);
         }
         
         /// <summary>
@@ -45,8 +59,15 @@ namespace MyIslandGame.ECS.Systems
                 return transformA.Layer.CompareTo(transformB.Layer);
             });
             
-            // Begin sprite batch with deferred rendering and alpha blending
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+            // Begin sprite batch with transformation matrix from camera
+            _spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                null,
+                null,
+                null,
+                _camera.TransformMatrix);
             
             // Draw each entity
             foreach (var entity in renderableEntities)
