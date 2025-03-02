@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MyIslandGame.ECS;
 using MyIslandGame.ECS.Systems;
+using MyIslandGame.Core;
 
 namespace MyIslandGame.States
 {
@@ -10,8 +12,8 @@ namespace MyIslandGame.States
         private readonly RenderSystem _renderSystem;
 
         public PlayingState(Game1 game, GameStateManager stateManager, TimeManager timeManager) : base(game, stateManager)
-        {
-            _timeManager = timeManager; // Initialize TimeManager
+            var entityManager = new EntityManager();
+            _renderSystem = new RenderSystem(entityManager, spriteBatch, game.GraphicsDevice, _timeManager);
             var entityManager = new EntityManager();
             _renderSystem = new RenderSystem(entityManager, game.SpriteBatch, game.GraphicsDevice, _timeManager);
         }
