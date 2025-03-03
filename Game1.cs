@@ -1,3 +1,4 @@
+using System;  //need to add this for exception handling
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
