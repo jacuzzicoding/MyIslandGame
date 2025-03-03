@@ -47,7 +47,7 @@ namespace MyIslandGame.ECS.Systems
             base.Initialize();
             
             // Ensure gathering input actions are registered
-            _inputManager.RegisterAction("Gather", new InputAction(MouseButton.Left));
+            _inputManager.RegisterAction("Gather", new InputAction().MapKey(Keys.F));
         }
 
         /// <summary>
