@@ -2,7 +2,7 @@
 
 An island-based survival and ecosystem simulation game where players explore procedurally generated islands, interact with evolving wildlife, gather resources, and build structures. Built with MonoGame and C#.
 
-![Current Version](https://img.shields.io/badge/version-0.0.2--alpha-blue)
+![Current Version](https://img.shields.io/badge/version-0.0.3--alpha-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-early%20development-orange)
 
@@ -19,7 +19,7 @@ MyIslandGame combines resource management with deep ecosystem simulation. Your a
 
 ## Current State
 
-The game is in early development (v0.0.2-alpha). Current features include:
+The game is in early development (v0.0.3-alpha). Current features include:
 - Entity Component System architecture
 - Basic movement and collision detection
 - Simple rendering of placeholder graphics
@@ -28,7 +28,10 @@ The game is in early development (v0.0.2-alpha). Current features include:
 - Camera system with zoom and player following
 - Tile-based procedural map generation
 - Day/night cycle with visual effects
-- Simple UI framework and debug display
+- Resource system with different resource types
+- Environmental objects (trees, rocks, bushes) with harvesting mechanics
+- Inventory system with hotbar
+- Resource gathering with tools
 
 See the [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed information about the current version.
 
@@ -45,10 +48,17 @@ See the [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed information about the 
 - Basic UI framework with debug information
 - Player movement and world boundaries
 
-### v0.0.3 (Planned)
-- Simple ecosystem with basic entities
-- Resource gathering mechanics
-- Inventory system
+### v0.0.3 (Released)
+- Resource system with different resource types
+- Environmental objects (trees, rocks, bushes) with regrowth
+- Inventory system with hotbar and UI
+- Resource gathering mechanics with tools
+
+### v0.0.4 (Planned)
+- Crafting system for creating tools and items
+- Building mechanics for player structures
+- Basic ecosystem with animals and plants
+- More environmental variety and biomes
 
 ### Future
 - Entity evolution system
@@ -79,6 +89,10 @@ dotnet run
 
 ### Controls
 - **WASD/Arrow Keys**: Move player
+- **E**: Toggle inventory
+- **1-9**: Select hotbar slots
+- **Mouse Wheel**: Cycle through hotbar
+- **Left Click**: Gather resources / Use selected item
 - **+/-**: Zoom in/out camera
 - **T**: Speed up time (5x)
 - **R**: Reset time to 8:00 AM
@@ -98,7 +112,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - MonoGame community
-- Inspiration from games like Stardew Valley, Animal Crossing, and Don't Starve
+- Inspiration from games like Stardew Valley, Animal Crossing, and Vintage Story
 
 ---
 
