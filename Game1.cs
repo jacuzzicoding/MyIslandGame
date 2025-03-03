@@ -60,10 +60,21 @@ namespace MyIslandGame
 
         protected override void Draw(GameTime gameTime)
         {
-            // Draw the current state
-            _stateManager.Draw(gameTime, _spriteBatch);
-
-            base.Draw(gameTime);
+            try
+            {
+                GraphicsDevice.Clear(Color.CornflowerBlue);
+                
+                // Draw the current state
+                _stateManager.Draw(gameTime, _spriteBatch);
+                
+                base.Draw(gameTime);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Draw error: {ex.Message}\n{ex.StackTrace}");
+                // Optionally reset states or take recovery actions
+            }
         }
     }
 }
