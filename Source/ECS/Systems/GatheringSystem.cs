@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input; // Add this import for Keys
 using MyIslandGame.Core.Resources;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.Input;
