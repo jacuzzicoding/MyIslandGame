@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MyIslandGame.Core;
 using MyIslandGame.States;
 
 namespace MyIslandGame
@@ -39,7 +40,7 @@ namespace MyIslandGame
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
             // Create and add game states
-            var playingState = new PlayingState(this, _stateManager); // Fix the constructor call - use only the parameters required for your PlayingState constructor
+            var playingState = new PlayingState(this, _stateManager);
             _stateManager.AddState<PlayingState>(playingState);
             
             // Set the initial state
