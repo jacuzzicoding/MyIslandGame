@@ -195,4 +195,45 @@ namespace MyIslandGame.Input
         LeftX, LeftY,
         RightX, RightY
     }
+
+    /// <summary>
+    /// Enumeration of mouse buttons and actions.
+    /// </summary>
+    public enum MouseButton
+    {
+        /// <summary>
+        /// The left mouse button.
+        /// </summary>
+        Left,
+        
+        /// <summary>
+        /// The right mouse button.
+        /// </summary>
+        Right,
+        
+        /// <summary>
+        /// The middle mouse button (scroll wheel click).
+        /// </summary>
+        Middle,
+        
+        /// <summary>
+        /// The first extended mouse button.
+        /// </summary>
+        XButton1,
+        
+        /// <summary>
+        /// The second extended mouse button.
+        /// </summary>
+        XButton2,
+        
+        /// <summary>
+        /// Scroll wheel up action.
+        /// </summary>
+        ScrollUp,
+        
+        /// <summary>
+        /// Scroll wheel down action.
+        /// </summary>
+        ScrollDown
+    }
 }
