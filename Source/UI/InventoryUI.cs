@@ -88,6 +88,9 @@ namespace MyIslandGame.UI
                 return;
             }
             
+            // Start the sprite batch
+            _spriteBatch.Begin();
+            
             // Always draw hotbar
             DrawHotbar();
             
@@ -96,6 +99,9 @@ namespace MyIslandGame.UI
             {
                 DrawInventory();
             }
+            
+            // End the sprite batch
+            _spriteBatch.End();
         }
 
         /// <summary>
