@@ -18,7 +18,7 @@ namespace MyIslandGame.ECS.Systems
         private readonly Random _random = new Random();
         
         // Range for gathering interactions
-        private const float GatheringRange = 100f;
+        private const float GatheringRange = 150f; // Increased from 100f for easier gathering
         
         // Cooldown between gathering actions
         private readonly TimeSpan _gatheringCooldown = TimeSpan.FromSeconds(0.5);
@@ -48,7 +48,9 @@ namespace MyIslandGame.ECS.Systems
             base.Initialize();
             
             // Ensure gathering input actions are registered
-            _inputManager.RegisterAction("Gather", new InputAction().MapKey(Keys.F));
+            _inputManager.RegisterAction("Gather", new InputAction().MapMouseButton(MouseButton.Left));
+            
+            Console.WriteLine("GatheringSystem initialized");
         }
 
         /// <summary>
@@ -65,17 +67,26 @@ namespace MyIslandGame.ECS.Systems
                 {
                     // Find player entity (assuming single player game)
                     var playerEntities = EntityManager.GetEntitiesWithComponents(typeof(PlayerComponent), typeof(TransformComponent), typeof(InventoryComponent));
-                    var playerEntity = playerEntities.GetEnumerator();
+                    var playerEnumerator = playerEntities.GetEnumerator();
                     
-                    if (playerEntity.MoveNext())
+                    if (playerEnumerator.MoveNext())
                     {
-                        var player = playerEntity.Current;
+                        var player = playerEnumerator.Current;
                         
                         // Try to gather from nearby resource
                         if (TryGatherResource(player, gameTime))
                         {
                             _lastGatheringTime = gameTime.TotalGameTime;
+                            Console.WriteLine("Resource gathered successfully!");
                         }
+                        else
+                        {
+                            Console.WriteLine("No resource found to gather.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No player entity found with required components.");
                     }
                 }
             }
@@ -148,11 +159,18 @@ namespace MyIslandGame.ECS.Systems
                 var entityTransform = entity.GetComponent<TransformComponent>();
                 float distance = Vector2.Distance(playerPosition, entityTransform.Position);
                 
+                Console.WriteLine($"Environmental object found at distance {distance}");
+                
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
                     closestEntity = entity;
                 }
+            }
+            
+            if (closestEntity != null)
+            {
+                Console.WriteLine($"Closest environmental object found at distance {closestDistance}");
             }
             
             return closestEntity;
