@@ -193,11 +193,6 @@ namespace MyIslandGame.States
             
             // Create environmental objects
             PopulateWorldWithEnvironmentalObjects();
-            
-            // Create some obstacle entities for testing collision
-            CreateObstacle(new Vector2(500, 300), new Vector2(50, 50), Color.Red);
-            CreateObstacle(new Vector2(300, 500), new Vector2(50, 100), Color.Yellow);
-            CreateObstacle(new Vector2(700, 400), new Vector2(100, 50), Color.Orange);
         }
         
         /// <summary>
@@ -301,6 +296,16 @@ namespace MyIslandGame.States
                 Vector2 nextPosition = transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 Point nextTile = _tileMap.WorldToTile(nextPosition);
                 
+                // Check for water tile
+                Tile tile = _tileMap.GetTile(nextTile.X, nextTile.Y);
+                if (tile != null && tile.IsWater)
+                {
+                    velocity.Velocity = Vector2.Zero;
+                    return;  // Option 1: Return from the method
+                    // OR
+                    // Option 2: Just remove the continue statement entirely
+                }
+
                 // If the next position would be on an impassable tile, stop movement in that direction
                 if (!_tileMap.IsTilePassable(nextTile.X, nextTile.Y))
                 {
@@ -597,9 +602,10 @@ namespace MyIslandGame.States
                     continue;
                 }
                 
-                // Skip if not on a passable tile
+                // Skip if not on a passable tile or if it's water
                 Point tilePos = _tileMap.WorldToTile(position);
-                if (!_tileMap.IsTilePassable(tilePos.X, tilePos.Y))
+                Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                if (tile == null || !tile.IsPassable || tile.IsWater)
                 {
                     continue;
                 }
@@ -648,9 +654,10 @@ namespace MyIslandGame.States
                     continue;
                 }
                 
-                // Skip if not on a passable tile
+                // Skip if not on a passable tile or if it's water
                 Point tilePos = _tileMap.WorldToTile(position);
-                if (!_tileMap.IsTilePassable(tilePos.X, tilePos.Y))
+                Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                if (tile == null || !tile.IsPassable || tile.IsWater)
                 {
                     continue;
                 }
@@ -699,9 +706,10 @@ namespace MyIslandGame.States
                     continue;
                 }
                 
-                // Skip if not on a passable tile
+                // Skip if not on a passable tile or if it's water
                 Point tilePos = _tileMap.WorldToTile(position);
-                if (!_tileMap.IsTilePassable(tilePos.X, tilePos.Y))
+                Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                if (tile == null || !tile.IsPassable || tile.IsWater)
                 {
                     continue;
                 }
