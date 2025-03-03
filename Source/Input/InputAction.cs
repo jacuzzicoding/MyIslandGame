@@ -6,13 +6,14 @@ using Microsoft.Xna.Framework.Input;
 namespace MyIslandGame.Input
 {
     /// <summary>
-    /// Represents a game action that can be mapped to various input methods.
+    /// Represents an input action that can be mapped to various input devices and buttons.
     /// </summary>
     public class InputAction
     {
-        private readonly List<Keys> _keys = new();
-        private readonly List<GamePadButtons> _buttons = new();
-        private readonly List<MouseButton> _mouseButtons = new();
+        private readonly List<Keys> _keys = new List<Keys>();
+        private readonly List<MouseButton> _mouseButtons = new List<MouseButton>();
+        private readonly List<Buttons> _gamepadButtons = new List<Buttons>();
+        
         private GamePadTriggers _trigger = GamePadTriggers.None;
         private GamePadThumbSticks _thumbStick = GamePadThumbSticks.None;
         
@@ -52,44 +53,32 @@ namespace MyIslandGame.Input
         /// Maps a keyboard key to this action.
         /// </summary>
         /// <param name="key">The key to map.</param>
-        /// <returns>This action for method chaining.</returns>
+        /// <returns>This InputAction instance for chaining.</returns>
         public InputAction MapKey(Keys key)
         {
-            if (!_keys.Contains(key))
-            {
-                _keys.Add(key);
-            }
-            
-            return this;
-        }
-        
-        /// <summary>
-        /// Maps a gamepad button to this action.
-        /// </summary>
-        /// <param name="button">The button to map.</param>
-        /// <returns>This action for method chaining.</returns>
-        public InputAction MapButton(GamePadButtons button)
-        {
-            if (!_buttons.Contains(button))
-            {
-                _buttons.Add(button);
-            }
-            
+            _keys.Add(key);
             return this;
         }
         
         /// <summary>
         /// Maps a mouse button to this action.
         /// </summary>
-        /// <param name="button">The button to map.</param>
-        /// <returns>This action for method chaining.</returns>
+        /// <param name="button">The mouse button to map.</param>
+        /// <returns>This InputAction instance for chaining.</returns>
         public InputAction MapMouseButton(MouseButton button)
         {
-            if (!_mouseButtons.Contains(button))
-            {
-                _mouseButtons.Add(button);
-            }
-            
+            _mouseButtons.Add(button);
+            return this;
+        }
+        
+        /// <summary>
+        /// Maps a gamepad button to this action.
+        /// </summary>
+        /// <param name="button">The gamepad button to map.</param>
+        /// <returns>This InputAction instance for chaining.</returns>
+        public InputAction MapGamepadButton(Buttons button)
+        {
+            _gamepadButtons.Add(button);
             return this;
         }
         
@@ -114,6 +103,21 @@ namespace MyIslandGame.Input
             _thumbStick = thumbStick;
             return this;
         }
+        
+        /// <summary>
+        /// Gets the list of mapped keyboard keys.
+        /// </summary>
+        public IReadOnlyList<Keys> Keys => _keys.AsReadOnly();
+        
+        /// <summary>
+        /// Gets the list of mapped mouse buttons.
+        /// </summary>
+        public IReadOnlyList<MouseButton> MouseButtons => _mouseButtons.AsReadOnly();
+        
+        /// <summary>
+        /// Gets the list of mapped gamepad buttons.
+        /// </summary>
+        public IReadOnlyList<Buttons> GamepadButtons => _gamepadButtons.AsReadOnly();
         
         /// <summary>
         /// Updates the state of this action.
@@ -191,4 +195,5 @@ namespace MyIslandGame.Input
         LeftX, LeftY,
         RightX, RightY
     }
+
 }

@@ -189,6 +189,10 @@ namespace MyIslandGame.Input
     {
         Left,
         Right,
-        Middle
+        Middle,
+        XButton1,
+        XButton2,
+        ScrollUp,
+        ScrollDown
     }
 }

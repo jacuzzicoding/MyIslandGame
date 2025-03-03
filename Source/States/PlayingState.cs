@@ -4,10 +4,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MyIslandGame.Core;
+using MyIslandGame.Core.Resources;
 using MyIslandGame.ECS;
 using MyIslandGame.ECS.Components;
+using MyIslandGame.ECS.Factories;
 using MyIslandGame.ECS.Systems;
 using MyIslandGame.Input;
+using MyIslandGame.Inventory;
 using MyIslandGame.Rendering;
 using MyIslandGame.UI;
 using MyIslandGame.World;
@@ -26,6 +29,9 @@ namespace MyIslandGame.States
         private RenderSystem _renderSystem;
         private MovementSystem _movementSystem;
         private CollisionSystem _collisionSystem;
+        private EnvironmentalObjectSystem _environmentalObjectSystem;
+        private InventorySystem _inventorySystem;
+        private GatheringSystem _gatheringSystem;
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -39,10 +45,14 @@ namespace MyIslandGame.States
         private UIManager _uiManager;
         private SpriteFont _debugFont;
         private Texture2D _lightOverlayTexture;
-        
+        private InventoryUI _inventoryUI;
+    
         // World and map
         private TileMap _tileMap;
         private WorldGenerator _worldGenerator;
+        
+        // Resource management
+        private ResourceManager _resourceManager;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayingState"/> class.
@@ -63,6 +73,9 @@ namespace MyIslandGame.States
             
             // Initialize world generator
             _worldGenerator = new WorldGenerator(game.GraphicsDevice);
+            
+            // Initialize resource manager
+            _resourceManager = new ResourceManager(game.GraphicsDevice);
         }
         
         /// <summary>
@@ -84,15 +97,24 @@ namespace MyIslandGame.States
             _renderSystem = new RenderSystem(_entityManager, _spriteBatch, GraphicsDevice);
             _movementSystem = new MovementSystem(_entityManager);
             _collisionSystem = new CollisionSystem(_entityManager);
+            _environmentalObjectSystem = new EnvironmentalObjectSystem(_entityManager, _gameTimeManager, GraphicsDevice);
+            _inventorySystem = new InventorySystem(_entityManager, _inputManager);
+            _gatheringSystem = new GatheringSystem(_entityManager, _inputManager, _resourceManager);
             
             // Add systems to entity manager
             _entityManager.AddSystem(_movementSystem);
             _entityManager.AddSystem(_collisionSystem);
+            _entityManager.AddSystem(_environmentalObjectSystem);
+            _entityManager.AddSystem(_inventorySystem);
+            _entityManager.AddSystem(_gatheringSystem);
             
             // Set up collision handlers
             _collisionSystem.CollisionOccurred += HandleCollision;
             _collisionSystem.TriggerEntered += HandleTriggerEnter;
             _collisionSystem.TriggerExited += HandleTriggerExit;
+            
+            // Set up resource gathering feedback
+            _gatheringSystem.ResourceGathered += OnResourceGathered;
         }
         
         /// <summary>
@@ -129,7 +151,7 @@ namespace MyIslandGame.States
             // Create player entity
             _playerEntity = _entityManager.CreateEntity();
             
-            // Generate the tile map (25x25 tiles, 64 pixels each)
+            // Generate the tile map (30x30 tiles, 64 pixels each)
             _tileMap = _worldGenerator.GenerateTestMap(30, 30, 64);
             
             // Set world bounds based on the tile map
@@ -151,15 +173,26 @@ namespace MyIslandGame.States
                 Vector2.Zero,
                 ColliderType.Rectangle);
             
+            // Add player component and inventory component
+            var playerComponent = new PlayerComponent("Player", 200f);
+            var inventoryComponent = new InventoryComponent(27, 9);
+            
             _playerEntity.AddComponent(playerTransform);
             _playerEntity.AddComponent(playerSprite);
             _playerEntity.AddComponent(playerVelocity);
             _playerEntity.AddComponent(playerCollider);
+            _playerEntity.AddComponent(playerComponent);
+            _playerEntity.AddComponent(inventoryComponent);
             
-            // Create some obstacle entities for testing collision
-            CreateObstacle(new Vector2(500, 300), new Vector2(50, 50), Color.Red);
-            CreateObstacle(new Vector2(300, 500), new Vector2(50, 100), Color.Yellow);
-            CreateObstacle(new Vector2(700, 400), new Vector2(100, 50), Color.Orange);
+            // Initialize inventory UI
+            _inventoryUI = new InventoryUI(_spriteBatch, GraphicsDevice, _inventorySystem, _entityManager, _debugFont);
+            
+            // Add some starter tools to player inventory
+            inventoryComponent.Inventory.TryAddItem(Tool.CreateAxe(GraphicsDevice));
+            inventoryComponent.Inventory.TryAddItem(Tool.CreatePickaxe(GraphicsDevice));
+            
+            // Create environmental objects
+            PopulateWorldWithEnvironmentalObjects();
         }
         
         /// <summary>
@@ -263,6 +296,16 @@ namespace MyIslandGame.States
                 Vector2 nextPosition = transform.Position + velocity.Velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 Point nextTile = _tileMap.WorldToTile(nextPosition);
                 
+                // Check for water tile
+                Tile tile = _tileMap.GetTile(nextTile.X, nextTile.Y);
+                if (tile != null && tile.IsWater)
+                {
+                    velocity.Velocity = Vector2.Zero;
+                    return;  // Option 1: Return from the method
+                    // OR
+                    // Option 2: Just remove the continue statement entirely
+                }
+
                 // If the next position would be on an impassable tile, stop movement in that direction
                 if (!_tileMap.IsTilePassable(nextTile.X, nextTile.Y))
                 {
@@ -363,6 +406,9 @@ namespace MyIslandGame.States
                 _gameTimeManager.SetTime(8, 0);
             }
             
+            // Update UI
+            _inventoryUI.Update();
+            
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
         }
@@ -422,6 +468,9 @@ namespace MyIslandGame.States
                 _spriteBatch.End();
             }
             
+            // Draw inventory UI
+            _inventoryUI.Draw();
+            
             // Draw debug information
             if (_debugFont != null)
             {
@@ -435,8 +484,8 @@ namespace MyIslandGame.States
                     $"Player Position: {_playerEntity.GetComponent<TransformComponent>().Position.X:F0}, {_playerEntity.GetComponent<TransformComponent>().Position.Y:F0}",
                     $"Player Tile: {_tileMap.WorldToTile(_playerEntity.GetComponent<TransformComponent>().Position)}",
                     $"Map Size: {_tileMap.Width}x{_tileMap.Height} tiles ({_tileMap.PixelWidth}x{_tileMap.PixelHeight} pixels)",
-                    $"Controls: T=Fast time, R=Reset to 8:00 AM",
-                    $"Controls: +/- = Zoom, WASD = Move"
+                    $"Controls: E=Toggle Inventory, 1-9=Select Hotbar",
+                    $"Controls: Click=Use/Gather, T=Fast time, +/- = Zoom"
                 };
                 
                 _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
@@ -497,6 +546,195 @@ namespace MyIslandGame.States
         private void HandleTriggerExit(Entity entityA, Entity entityB)
         {
             // Handle trigger exit here
+        }
+
+        /// <summary>
+        /// Populates the world with environmental objects like trees and rocks.
+        /// </summary>
+        private void PopulateWorldWithEnvironmentalObjects()
+        {
+            // Use a deterministic seed for consistent results during development
+            Random random = new Random(12345);
+            
+            // Calculate the safe area around the player spawn (center of map)
+            Vector2 mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
+            Rectangle safeArea = new Rectangle(
+                (int)mapCenter.X - 150,
+                (int)mapCenter.Y - 150,
+                300,
+                300);
+            
+            // Get the map bounds
+            int mapWidth = _tileMap.PixelWidth;
+            int mapHeight = _tileMap.PixelHeight;
+            
+            // Add trees (much less dense - about 1 tree per 15000 square pixels)
+            int numTrees = (mapWidth * mapHeight) / 15000;
+            Console.WriteLine($"Creating {numTrees} trees");
+            
+            // Create a grid to ensure better distribution and prevent clustering
+            int gridSize = 150; // Minimum distance between trees
+            bool[,] occupiedCells = new bool[(mapWidth / gridSize) + 1, (mapHeight / gridSize) + 1];
+            
+            int treesCreated = 0;
+            int maxAttempts = numTrees * 3; // Limit the number of attempts to prevent infinite loops
+            int attempts = 0;
+            
+            while (treesCreated < numTrees && attempts < maxAttempts)
+            {
+                attempts++;
+                
+                // Pick a random position
+                int x = random.Next(50, mapWidth - 50);
+                int y = random.Next(50, mapHeight - 50);
+                Vector2 position = new Vector2(x, y);
+                
+                // Check if this grid cell is already occupied
+                int gridX = x / gridSize;
+                int gridY = y / gridSize;
+                
+                if (occupiedCells[gridX, gridY])
+                    continue; // Cell already has a tree, try another position
+                
+                // Skip if in safe area
+                if (safeArea.Contains(position))
+                {
+                    continue;
+                }
+                
+                // Skip if not on a passable tile or if it's water
+                Point tilePos = _tileMap.WorldToTile(position);
+                Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                if (tile == null || !tile.IsPassable || tile.IsWater)
+                {
+                    continue;
+                }
+                
+                // Random growth level (70-100%)
+                int growth = random.Next(70, 101);
+                
+                // Create tree with random growth level
+                EnvironmentalObjectFactory.CreateTree(_entityManager, GraphicsDevice, position, growth);
+                
+                // Mark this grid cell as occupied
+                occupiedCells[gridX, gridY] = true;
+                treesCreated++;
+            }
+            
+            // Add rocks (much less dense - about 1 rock per 30000 square pixels)
+            int numRocks = (mapWidth * mapHeight) / 30000;
+            Console.WriteLine($"Creating {numRocks} rocks");
+            
+            // Reset grid for rocks
+            occupiedCells = new bool[(mapWidth / gridSize) + 1, (mapHeight / gridSize) + 1];
+            
+            int rocksCreated = 0;
+            attempts = 0;
+            maxAttempts = numRocks * 3;
+            
+            while (rocksCreated < numRocks && attempts < maxAttempts)
+            {
+                attempts++;
+                
+                // Pick a random position
+                int x = random.Next(50, mapWidth - 50);
+                int y = random.Next(50, mapHeight - 50);
+                Vector2 position = new Vector2(x, y);
+                
+                // Check if this grid cell is already occupied
+                int gridX = x / gridSize;
+                int gridY = y / gridSize;
+                
+                if (occupiedCells[gridX, gridY])
+                    continue; // Cell already has a rock, try another position
+                
+                // Skip if in safe area
+                if (safeArea.Contains(position))
+                {
+                    continue;
+                }
+                
+                // Skip if not on a passable tile or if it's water
+                Point tilePos = _tileMap.WorldToTile(position);
+                Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                if (tile == null || !tile.IsPassable || tile.IsWater)
+                {
+                    continue;
+                }
+                
+                // Random size (80-100%)
+                int size = random.Next(80, 101);
+                
+                // Create rock with random size
+                EnvironmentalObjectFactory.CreateRock(_entityManager, GraphicsDevice, position, size);
+                
+                // Mark this grid cell as occupied
+                occupiedCells[gridX, gridY] = true;
+                rocksCreated++;
+            }
+            
+            // Add bushes (much less dense - about 1 bush per 20000 square pixels)
+            int numBushes = (mapWidth * mapHeight) / 20000;
+            Console.WriteLine($"Creating {numBushes} bushes");
+            
+            // Reset grid for bushes
+            occupiedCells = new bool[(mapWidth / gridSize) + 1, (mapHeight / gridSize) + 1];
+            
+            int bushesCreated = 0;
+            attempts = 0;
+            maxAttempts = numBushes * 3;
+            
+            while (bushesCreated < numBushes && attempts < maxAttempts)
+            {
+                attempts++;
+                
+                // Pick a random position
+                int x = random.Next(50, mapWidth - 50);
+                int y = random.Next(50, mapHeight - 50);
+                Vector2 position = new Vector2(x, y);
+                
+                // Check if this grid cell is already occupied
+                int gridX = x / gridSize;
+                int gridY = y / gridSize;
+                
+                if (occupiedCells[gridX, gridY])
+                    continue; // Cell already has a bush, try another position
+                
+                // Skip if in safe area
+                if (safeArea.Contains(position))
+                {
+                    continue;
+                }
+                
+                // Skip if not on a passable tile or if it's water
+                Point tilePos = _tileMap.WorldToTile(position);
+                Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                if (tile == null || !tile.IsPassable || tile.IsWater)
+                {
+                    continue;
+                }
+                
+                // Random growth level (60-100%)
+                int growth = random.Next(60, 101);
+                
+                // Create bush with random growth level
+                EnvironmentalObjectFactory.CreateBush(_entityManager, GraphicsDevice, position, growth);
+                
+                // Mark this grid cell as occupied
+                occupiedCells[gridX, gridY] = true;
+                bushesCreated++;
+            }
+        }
+        
+        /// <summary>
+        /// Handles resource gathering events.
+        /// </summary>
+        private void OnResourceGathered(object sender, ResourceGatheredEventArgs e)
+        {
+            // Add some feedback when resources are gathered (for future implementation)
+            Console.WriteLine($"Gathered {e.Amount} {e.Resource.Name}");
+            
+            // In the future, we could add particle effects, sounds, etc.
         }
     }
 }

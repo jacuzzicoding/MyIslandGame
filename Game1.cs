@@ -1,6 +1,8 @@
+using System;  //need to add this for exception handling
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MyIslandGame.Core;
 using MyIslandGame.States;
 
 namespace MyIslandGame
@@ -39,7 +41,7 @@ namespace MyIslandGame
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
             // Create and add game states
-            var playingState = new PlayingState(this, _stateManager); // Fix the constructor call - use only the parameters required for your PlayingState constructor
+            var playingState = new PlayingState(this, _stateManager);
             _stateManager.AddState<PlayingState>(playingState);
             
             // Set the initial state
@@ -59,10 +61,21 @@ namespace MyIslandGame
 
         protected override void Draw(GameTime gameTime)
         {
-            // Draw the current state
-            _stateManager.Draw(gameTime, _spriteBatch);
-
-            base.Draw(gameTime);
+            try
+            {
+                GraphicsDevice.Clear(Color.CornflowerBlue);
+                
+                // Draw the current state
+                _stateManager.Draw(gameTime, _spriteBatch);
+                
+                base.Draw(gameTime);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Draw error: {ex.Message}\n{ex.StackTrace}");
+                // Optionally reset states or take recovery actions
+            }
         }
     }
 }
