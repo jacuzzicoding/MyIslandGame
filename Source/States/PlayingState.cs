@@ -563,14 +563,33 @@ namespace MyIslandGame.States
             int mapWidth = _tileMap.PixelWidth;
             int mapHeight = _tileMap.PixelHeight;
             
-            // Add trees (about 1 tree per 2500 square pixels)
-            int numTrees = (mapWidth * mapHeight) / 2500;
-            for (int i = 0; i < numTrees; i++)
+            // Add trees (much less dense - about 1 tree per 15000 square pixels)
+            int numTrees = (mapWidth * mapHeight) / 15000;
+            Console.WriteLine($"Creating {numTrees} trees");
+            
+            // Create a grid to ensure better distribution and prevent clustering
+            int gridSize = 150; // Minimum distance between trees
+            bool[,] occupiedCells = new bool[(mapWidth / gridSize) + 1, (mapHeight / gridSize) + 1];
+            
+            int treesCreated = 0;
+            int maxAttempts = numTrees * 3; // Limit the number of attempts to prevent infinite loops
+            int attempts = 0;
+            
+            while (treesCreated < numTrees && attempts < maxAttempts)
             {
+                attempts++;
+                
                 // Pick a random position
                 int x = random.Next(50, mapWidth - 50);
                 int y = random.Next(50, mapHeight - 50);
                 Vector2 position = new Vector2(x, y);
+                
+                // Check if this grid cell is already occupied
+                int gridX = x / gridSize;
+                int gridY = y / gridSize;
+                
+                if (occupiedCells[gridX, gridY])
+                    continue; // Cell already has a tree, try another position
                 
                 // Skip if in safe area
                 if (safeArea.Contains(position))
@@ -590,16 +609,38 @@ namespace MyIslandGame.States
                 
                 // Create tree with random growth level
                 EnvironmentalObjectFactory.CreateTree(_entityManager, GraphicsDevice, position, growth);
+                
+                // Mark this grid cell as occupied
+                occupiedCells[gridX, gridY] = true;
+                treesCreated++;
             }
             
-            // Add rocks (about 1 rock per 5000 square pixels)
-            int numRocks = (mapWidth * mapHeight) / 5000;
-            for (int i = 0; i < numRocks; i++)
+            // Add rocks (much less dense - about 1 rock per 30000 square pixels)
+            int numRocks = (mapWidth * mapHeight) / 30000;
+            Console.WriteLine($"Creating {numRocks} rocks");
+            
+            // Reset grid for rocks
+            occupiedCells = new bool[(mapWidth / gridSize) + 1, (mapHeight / gridSize) + 1];
+            
+            int rocksCreated = 0;
+            attempts = 0;
+            maxAttempts = numRocks * 3;
+            
+            while (rocksCreated < numRocks && attempts < maxAttempts)
             {
+                attempts++;
+                
                 // Pick a random position
                 int x = random.Next(50, mapWidth - 50);
                 int y = random.Next(50, mapHeight - 50);
                 Vector2 position = new Vector2(x, y);
+                
+                // Check if this grid cell is already occupied
+                int gridX = x / gridSize;
+                int gridY = y / gridSize;
+                
+                if (occupiedCells[gridX, gridY])
+                    continue; // Cell already has a rock, try another position
                 
                 // Skip if in safe area
                 if (safeArea.Contains(position))
@@ -619,16 +660,38 @@ namespace MyIslandGame.States
                 
                 // Create rock with random size
                 EnvironmentalObjectFactory.CreateRock(_entityManager, GraphicsDevice, position, size);
+                
+                // Mark this grid cell as occupied
+                occupiedCells[gridX, gridY] = true;
+                rocksCreated++;
             }
             
-            // Add bushes (about 1 bush per 3000 square pixels)
-            int numBushes = (mapWidth * mapHeight) / 3000;
-            for (int i = 0; i < numBushes; i++)
+            // Add bushes (much less dense - about 1 bush per 20000 square pixels)
+            int numBushes = (mapWidth * mapHeight) / 20000;
+            Console.WriteLine($"Creating {numBushes} bushes");
+            
+            // Reset grid for bushes
+            occupiedCells = new bool[(mapWidth / gridSize) + 1, (mapHeight / gridSize) + 1];
+            
+            int bushesCreated = 0;
+            attempts = 0;
+            maxAttempts = numBushes * 3;
+            
+            while (bushesCreated < numBushes && attempts < maxAttempts)
             {
+                attempts++;
+                
                 // Pick a random position
                 int x = random.Next(50, mapWidth - 50);
                 int y = random.Next(50, mapHeight - 50);
                 Vector2 position = new Vector2(x, y);
+                
+                // Check if this grid cell is already occupied
+                int gridX = x / gridSize;
+                int gridY = y / gridSize;
+                
+                if (occupiedCells[gridX, gridY])
+                    continue; // Cell already has a bush, try another position
                 
                 // Skip if in safe area
                 if (safeArea.Contains(position))
@@ -648,6 +711,10 @@ namespace MyIslandGame.States
                 
                 // Create bush with random growth level
                 EnvironmentalObjectFactory.CreateBush(_entityManager, GraphicsDevice, position, growth);
+                
+                // Mark this grid cell as occupied
+                occupiedCells[gridX, gridY] = true;
+                bushesCreated++;
             }
         }
         
