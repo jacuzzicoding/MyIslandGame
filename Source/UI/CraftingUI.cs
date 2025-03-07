@@ -21,6 +21,7 @@ namespace MyIslandGame.UI
         private readonly EntityManager _entityManager;
         private readonly GraphicsDevice _graphicsDevice;
         private readonly UIManager _uiManager;
+        private readonly ResourceManager _resourceManager;
         
         // UI elements
         private Rectangle _craftingGridBounds;
@@ -59,13 +60,15 @@ namespace MyIslandGame.UI
             InputManager inputManager,
             EntityManager entityManager,
             UIManager uiManager,
-            GraphicsDevice graphicsDevice)
+            GraphicsDevice graphicsDevice,
+            ResourceManager resourceManager)
         {
             _craftingSystem = craftingSystem ?? throw new ArgumentNullException(nameof(craftingSystem));
             _inputManager = inputManager ?? throw new ArgumentNullException(nameof(inputManager));
             _entityManager = entityManager ?? throw new ArgumentNullException(nameof(entityManager));
             _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
+            _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
             
             // Subscribe to crafting events
             _craftingSystem.CraftingResultChanged += OnCraftingResultChanged;
