@@ -94,6 +94,28 @@ namespace MyIslandGame.Input
         }
         
         /// <summary>
+        /// Gets whether an action was triggered this frame.
+        /// Alias for WasActionPressed for backward compatibility.
+        /// </summary>
+        /// <param name="actionName">The name of the action.</param>
+        /// <returns>True if the action was triggered, otherwise false.</returns>
+        public bool IsActionTriggered(string actionName)
+        {
+            return WasActionPressed(actionName);
+        }
+
+        /// <summary>
+        /// Gets whether an action was released this frame.
+        /// Alias for WasActionReleased for backward compatibility.
+        /// </summary>
+        /// <param name="actionName">The name of the action.</param>
+        /// <returns>True if the action was released, otherwise false.</returns>
+        public bool IsActionReleased(string actionName)
+        {
+            return WasActionReleased(actionName);
+        }
+        
+        /// <summary>
         /// Gets the value of an action's axis (typically between -1 and 1).
         /// </summary>
         /// <param name="actionName">The name of the action.</param>
