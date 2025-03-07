@@ -14,6 +14,7 @@ using MyIslandGame.Inventory;
 using MyIslandGame.Rendering;
 using MyIslandGame.UI;
 using MyIslandGame.World;
+using MyIslandGame.Crafting;
 
 namespace MyIslandGame.States
 {
