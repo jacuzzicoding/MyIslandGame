@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Xna.Framework;
 using MyIslandGame.Crafting;
 
 namespace MyIslandGame.ECS.Components
