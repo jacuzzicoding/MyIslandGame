@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MyIslandGame.Crafting;
+using MyIslandGame.Core.Resources;
 using MyIslandGame.ECS;
 using MyIslandGame.ECS.Components;
 using MyIslandGame.Input;
