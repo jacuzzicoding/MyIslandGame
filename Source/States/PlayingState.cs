@@ -33,7 +33,8 @@ namespace MyIslandGame.States
         private EnvironmentalObjectSystem _environmentalObjectSystem;
         private InventorySystem _inventorySystem;
         private GatheringSystem _gatheringSystem;
-        private CraftingSystem _craftingSystem; // Add this line
+        private CraftingSystem _craftingSystem;
+        private RecipeManager _recipeManager; // Add this line
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -78,6 +79,7 @@ namespace MyIslandGame.States
             
             // Initialize resource manager
             _resourceManager = new ResourceManager(game.GraphicsDevice);
+            _recipeManager = new RecipeManager(_resourceManager, game.GraphicsDevice); // Add GraphicsDevice parameter
         }
         
         /// <summary>
@@ -93,6 +95,7 @@ namespace MyIslandGame.States
             _inputManager.RegisterAction("MoveLeft", new InputAction().MapKey(Keys.A).MapKey(Keys.Left));
             _inputManager.RegisterAction("MoveRight", new InputAction().MapKey(Keys.D).MapKey(Keys.Right));
             _inputManager.RegisterAction("Interact", new InputAction().MapKey(Keys.E).MapKey(Keys.Space));
+            _inputManager.RegisterAction("ToggleCrafting", new InputAction().MapKey(Keys.C)); // Add this line
             
             // Create systems
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -102,7 +105,7 @@ namespace MyIslandGame.States
             _environmentalObjectSystem = new EnvironmentalObjectSystem(_entityManager, _gameTimeManager, GraphicsDevice);
             _inventorySystem = new InventorySystem(_entityManager, _inputManager);
             _gatheringSystem = new GatheringSystem(_entityManager, _inputManager, _resourceManager);
-            _craftingSystem = new CraftingSystem(_entityManager, _inputManager, _resourceManager); // Add this line
+            _craftingSystem = new CraftingSystem(_entityManager, _recipeManager, _inputManager, _resourceManager); // Modify this line
             
             // Add systems to entity manager
             _entityManager.AddSystem(_movementSystem);
@@ -427,7 +430,7 @@ namespace MyIslandGame.States
             _entityManager.Update(gameTime);
 
             // In the Update method or your input handling method
-            if (_inputManager.IsKeyJustPressed(Keys.C)) // Use whatever key you prefer
+           if (_inputManager.WasActionPressed("ToggleCrafting"))
             {
                 _craftingSystem.ToggleCrafting();
             }
