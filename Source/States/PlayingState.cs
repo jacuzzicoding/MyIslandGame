@@ -412,6 +412,12 @@ namespace MyIslandGame.States
             
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
+
+            // In the Update method or your input handling method
+            if (_inputManager.IsKeyJustPressed(Keys.C)) // Use whatever key you prefer
+            {
+                _craftingSystem.ToggleCrafting();
+            }
         }
         
         /// <summary>
