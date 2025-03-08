@@ -122,16 +122,6 @@ namespace MyIslandGame.States
             
             // Set up resource gathering feedback
             _gatheringSystem.ResourceGathered += OnResourceGathered;
-
-            // Initialize UI Manager with all required dependencies
-            _uiManager.Initialize(
-                _entityManager, 
-                _inputManager, 
-                _resourceManager, 
-                _craftingSystem,
-                _inventorySystem);
-            
-            _uiManager.LoadContent(Content);
         }
         
         /// <summary>
@@ -153,17 +143,30 @@ namespace MyIslandGame.States
             {
                 _debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Fallback: Create a temporary debug font message
-                Console.WriteLine("Warning: DebugFont not found. Add a SpriteFont to Content/Fonts/DebugFont");
+                Console.WriteLine($"Error loading DebugFont: {ex.Message}");
+                // Create a basic font texture here or use an alternative approach
+            }
+            
+            // Ensure we don't proceed with null font
+            if (_debugFont == null)
+            {
+                throw new InvalidOperationException("Failed to load DebugFont and no fallback was created. Add a SpriteFont at Content/Fonts/DebugFont");
             }
             
             // Set the font in the UI manager
-            if (_debugFont != null)
-            {
-                _uiManager.SetDefaultFont(_debugFont);
-            }
+            _uiManager.SetDebugFont(_debugFont);
+            
+            // Now that font is loaded, initialize UI manager
+            _uiManager.Initialize(
+                _entityManager, 
+                _inputManager, 
+                _resourceManager, 
+                _craftingSystem,
+                _inventorySystem);
+            
+            _uiManager.LoadContent(Content);
             
             // Create player entity
             _playerEntity = _entityManager.CreateEntity();
@@ -201,7 +204,14 @@ namespace MyIslandGame.States
             _playerEntity.AddComponent(playerComponent);
             _playerEntity.AddComponent(inventoryComponent);
             
-            // Initialize inventory UI
+            // Ensure the debug font is loaded
+            if (_debugFont == null)
+            {
+                // Create a basic font if the loading failed
+                _debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
+            }
+
+            // Initialize inventory UI with the font we now know exists
             _inventoryUI = new InventoryUI(_spriteBatch, GraphicsDevice, _inventorySystem, _entityManager, _debugFont);
             
             // Add some starter tools to player inventory

@@ -90,7 +90,7 @@ namespace MyIslandGame.UI
         /// </summary>
         public void LoadContent(Microsoft.Xna.Framework.Content.ContentManager content)
         {
-            _font = content.Load<SpriteFont>("Fonts/DefaultFont");
+            _font = content.Load<SpriteFont>("Fonts/DebugFont");
         }
 
         /// <summary>

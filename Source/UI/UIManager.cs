@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
@@ -18,7 +19,7 @@ namespace MyIslandGame.UI
     {
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
-        private SpriteFont _defaultFont;
+        private SpriteFont _debugFont;
         
         // UI Components
         private InventoryUI _inventoryUI;
@@ -50,7 +51,7 @@ namespace MyIslandGame.UI
                 _graphicsDevice, 
                 inventorySystem, 
                 entityManager, 
-                _defaultFont);
+                _debugFont);
             
             // Initialize crafting UI
             _craftingUI = new CraftingUI(
@@ -67,7 +68,33 @@ namespace MyIslandGame.UI
         /// </summary>
         public void LoadContent(ContentManager content)
         {
-            _defaultFont = content.Load<SpriteFont>("Fonts/DefaultFont");
+            try
+            {
+                Console.WriteLine("Attempting to load font: Fonts/DebugFont");
+                _debugFont = content.Load<SpriteFont>("Fonts/DebugFont");
+                Console.WriteLine("Successfully loaded font");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR loading font: {ex.Message}");
+                Console.WriteLine($"Content root directory: {content.RootDirectory}");
+                
+                // Try to list available content files
+                try {
+                    var contentPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, content.RootDirectory, "Fonts");
+                    Console.WriteLine($"Looking in: {contentPath}");
+                    if (Directory.Exists(contentPath)) {
+                        Console.WriteLine("Files in directory:");
+                        foreach (var file in Directory.GetFiles(contentPath)) {
+                            Console.WriteLine($"  - {Path.GetFileName(file)}");
+                        }
+                    } else {
+                        Console.WriteLine("Directory does not exist!");
+                    }
+                } catch { /* Ignore errors in diagnostic code */ }
+                
+                throw; // Re-throw the exception
+            }
             
             // Load content for UI components
             if (_craftingUI != null)
@@ -116,9 +143,9 @@ namespace MyIslandGame.UI
         /// Sets the default font to use for text.
         /// </summary>
         /// <param name="font">The sprite font to use.</param>
-        public void SetDefaultFont(SpriteFont font)
+        public void SetDebugFont(SpriteFont font)
         {
-            _defaultFont = font ?? throw new ArgumentNullException(nameof(font));
+            _debugFont = font ?? throw new ArgumentNullException(nameof(font));
         }
         
         /// <summary>
@@ -130,13 +157,13 @@ namespace MyIslandGame.UI
         /// <param name="scale">The text scale.</param>
         public void DrawText(string text, Vector2 position, Color color, float scale = 1.0f)
         {
-            if (_defaultFont == null)
+            if (_debugFont == null)
             {
-                throw new InvalidOperationException("Default font not set. Call SetDefaultFont first.");
+                throw new InvalidOperationException("Default font not set. Call SetDebugFont first.");
             }
             
             _spriteBatch.Begin();
-            _spriteBatch.DrawString(_defaultFont, text, position, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            _spriteBatch.DrawString(_debugFont, text, position, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
             _spriteBatch.End();
         }
         
@@ -155,9 +182,9 @@ namespace MyIslandGame.UI
             Color? backgroundColor = null,
             Color? textColor = null)
         {
-            if (_defaultFont == null)
+            if (_debugFont == null)
             {
-                throw new InvalidOperationException("Default font not set. Call SetDefaultFont first.");
+                throw new InvalidOperationException("Default font not set. Call SetDebugFont first.");
             }
             
             // Use default colors if not specified
@@ -172,7 +199,7 @@ namespace MyIslandGame.UI
             foreach (string text in debugTexts)
             {
                 textList.Add(text);
-                Vector2 size = _defaultFont.MeasureString(text);
+                Vector2 size = _debugFont.MeasureString(text);
                 maxWidth = Math.Max(maxWidth, size.X);
                 totalHeight += size.Y;
             }
@@ -198,12 +225,12 @@ namespace MyIslandGame.UI
             foreach (string text in textList)
             {
                 _spriteBatch.DrawString(
-                    _defaultFont,
+                    _debugFont,
                     text,
                     new Vector2(position.X + padding, currentY),
                     textColor.Value);
                 
-                currentY += _defaultFont.MeasureString(text).Y + padding / 2;
+                currentY += _debugFont.MeasureString(text).Y + padding / 2;
             }
             
             _spriteBatch.End();
