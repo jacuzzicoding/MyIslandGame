@@ -2,6 +2,11 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Content;
+using MyIslandGame.Crafting;
+using MyIslandGame.Core.Resources;
+using MyIslandGame.ECS;
+using MyIslandGame.Input;
 
 namespace MyIslandGame.UI
 {
@@ -14,6 +19,10 @@ namespace MyIslandGame.UI
         private readonly SpriteBatch _spriteBatch;
         private SpriteFont _defaultFont;
         
+        // UI Components
+        private InventoryUI _inventoryUI;
+        private CraftingUI _craftingUI;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManager"/> class.
         /// </summary>
@@ -24,6 +33,84 @@ namespace MyIslandGame.UI
             _spriteBatch = new SpriteBatch(graphicsDevice);
         }
         
+        /// <summary>
+        /// Initialize UI components
+        /// </summary>
+        public void Initialize(
+            EntityManager entityManager, 
+            InputManager inputManager,
+            ResourceManager resourceManager,
+            CraftingSystem craftingSystem,
+            InventorySystem inventorySystem)
+        {
+            // Initialize inventory UI
+            _inventoryUI = new InventoryUI(
+                _spriteBatch, 
+                _graphicsDevice, 
+                inventorySystem, 
+                entityManager, 
+                _defaultFont);
+            
+            // Initialize crafting UI
+            _craftingUI = new CraftingUI(
+                craftingSystem,
+                inputManager,
+                entityManager,
+                this,
+                _graphicsDevice,
+                resourceManager);
+        }
+        
+        /// <summary>
+        /// Loads content for UI components
+        /// </summary>
+        public void LoadContent(ContentManager content)
+        {
+            _defaultFont = content.Load<SpriteFont>("Fonts/DefaultFont");
+            
+            // Load content for UI components
+            if (_craftingUI != null)
+            {
+                _craftingUI.LoadContent(content);
+            }
+        }
+        
+        /// <summary>
+        /// Updates all UI components
+        /// </summary>
+        public void Update(GameTime gameTime)
+        {
+            // Update inventory UI
+            if (_inventoryUI != null)
+            {
+                _inventoryUI.Update();
+            }
+            
+            // Update crafting UI
+            if (_craftingUI != null)
+            {
+                _craftingUI.Update(gameTime);
+            }
+        }
+        
+        /// <summary>
+        /// Draws all UI components
+        /// </summary>
+        public void Draw()
+        {
+            // Draw inventory UI
+            if (_inventoryUI != null)
+            {
+                _inventoryUI.Draw();
+            }
+            
+            // Draw crafting UI if active
+            if (_craftingUI != null)
+            {
+                _craftingUI.Draw(_spriteBatch);
+            }
+        }
+
         /// <summary>
         /// Sets the default font to use for text.
         /// </summary>
