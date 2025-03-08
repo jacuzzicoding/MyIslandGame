@@ -367,7 +367,10 @@ namespace MyIslandGame.Crafting
 
         public void ToggleCrafting()
         {
-            IsCraftingActive = !IsCraftingActive;
+            if (_isCraftingActive)
+                CloseCrafting();
+            else
+                OpenCrafting(CraftingStationType.None);
         }
     }
 
