@@ -33,6 +33,7 @@ namespace MyIslandGame.States
         private EnvironmentalObjectSystem _environmentalObjectSystem;
         private InventorySystem _inventorySystem;
         private GatheringSystem _gatheringSystem;
+        private CraftingSystem _craftingSystem; // Add this line
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -101,6 +102,7 @@ namespace MyIslandGame.States
             _environmentalObjectSystem = new EnvironmentalObjectSystem(_entityManager, _gameTimeManager, GraphicsDevice);
             _inventorySystem = new InventorySystem(_entityManager, _inputManager);
             _gatheringSystem = new GatheringSystem(_entityManager, _inputManager, _resourceManager);
+            _craftingSystem = new CraftingSystem(_entityManager, _inputManager, _resourceManager); // Add this line
             
             // Add systems to entity manager
             _entityManager.AddSystem(_movementSystem);
@@ -108,6 +110,7 @@ namespace MyIslandGame.States
             _entityManager.AddSystem(_environmentalObjectSystem);
             _entityManager.AddSystem(_inventorySystem);
             _entityManager.AddSystem(_gatheringSystem);
+            _entityManager.AddSystem(_craftingSystem); // Add this line
             
             // Set up collision handlers
             _collisionSystem.CollisionOccurred += HandleCollision;
