@@ -364,6 +364,11 @@ namespace MyIslandGame.Crafting
         {
             CraftingResultChanged?.Invoke(this, new CraftingResultChangedEventArgs(recipe));
         }
+
+        public void ToggleCrafting()
+        {
+            IsCraftingActive = !IsCraftingActive;
+        }
     }
 
     /// <summary>
