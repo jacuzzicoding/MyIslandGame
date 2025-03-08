@@ -7,6 +7,7 @@ using MyIslandGame.Crafting;
 using MyIslandGame.Core.Resources;
 using MyIslandGame.ECS;
 using MyIslandGame.Input;
+using MyIslandGame.ECS.Systems;
 
 namespace MyIslandGame.UI
 {
