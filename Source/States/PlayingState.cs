@@ -116,6 +116,16 @@ namespace MyIslandGame.States
             
             // Set up resource gathering feedback
             _gatheringSystem.ResourceGathered += OnResourceGathered;
+
+            // Initialize UI Manager with all required dependencies
+            _uiManager.Initialize(
+                _entityManager, 
+                _inputManager, 
+                _resourceManager, 
+                _craftingSystem,
+                _inventorySystem);
+            
+            _uiManager.LoadContent(Content);
         }
         
         /// <summary>
@@ -418,6 +428,8 @@ namespace MyIslandGame.States
             {
                 _craftingSystem.ToggleCrafting();
             }
+
+            _uiManager.Update(gameTime);
         }
         
         /// <summary>
@@ -497,6 +509,8 @@ namespace MyIslandGame.States
                 
                 _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
             }
+
+            _uiManager.Draw();
         }
         
         /// <summary>
