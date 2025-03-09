@@ -36,6 +36,7 @@ namespace MyIslandGame.States
         private CraftingSystem _craftingSystem;
         private RecipeManager _recipeManager; // Add this line
         private CraftingUI _craftingUI;
+        private EmergencyCraftingUI _emergencyCraftingUI; // Add emergency UI
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
