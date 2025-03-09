@@ -1,5 +1,58 @@
 # MyIslandGame Release Notes
 
+## v0.0.4-alpha (March 8, 2025)
+
+### New Features
+
+#### Crafting System
+- Implemented `CraftingSystem` for transforming resources into items
+- Added `Recipe` and `RecipeManager` for defining and managing crafting recipes
+- Created `CraftingGrid` (2x2 and 3x3) for different crafting station types
+- Integrated basic recipes for common items (wood planks, basic tools)
+- Added `CraftingComponent` for tracking crafting capabilities
+- Implemented toggling of crafting UI with 'C' key
+
+#### Item System Expansion
+- Extended `Item` class with crafting-related properties
+- Added support for different stack sizes based on item type
+- Implemented improved item tooltips with crafting information
+- Added quantity tracking for crafting materials and results
+
+#### Backend Improvements
+- Enhanced ECS with specialized components for crafting
+- Improved inventory integration with crafting system
+- Added event-based notifications for crafting actions
+- Implemented specialized tool handling for resource gathering
+- Increased tree harvesting range to improve usability
+
+### Technical Improvements
+- Extended resource management system to handle crafting ingredients
+- Added support for crafting stations with different grid sizes
+- Improved input management for UI interactions
+- Enhanced player spawn logic to ensure valid starting location
+- Added more debug logging to diagnose rendering issues
+
+### Known Issues
+- Crafting UI may not render visually despite being functionally toggled
+- Inventory item movement can be buggy with inconsistent stacking behavior
+- Tree harvesting requires close proximity and may not consistently collect resources
+- Breaking rocks has inventory stacking issues
+- Resource breaking is proximity-based rather than cursor-targeted
+- UI system has SpriteBatch management and rendering issues
+- No initial crafting station exists in the world (must craft one first)
+
+### Controls
+- **WASD/Arrows**: Move player
+- **E**: Toggle inventory
+- **C**: Toggle crafting interface
+- **1-9**: Select hotbar slot
+- **Mouse Wheel**: Cycle through hotbar
+- **Left Click**: Gather resources / Use selected item / Interact with crafting
+- **+/-**: Zoom camera
+- **T**: Fast-forward time
+- **R**: Reset time to 8:00 AM
+- **ESC**: Close crafting / Quit game
+
 ## v0.0.3-alpha (March 2, 2025)
 
 ### New Features
