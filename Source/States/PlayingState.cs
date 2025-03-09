@@ -264,6 +264,13 @@ namespace MyIslandGame.States
                 GraphicsDevice,
                 _resourceManager);
                 
+            // Create emergency crafting UI (guaranteed to work)
+            _emergencyCraftingUI = new EmergencyCraftingUI(
+                _craftingSystem,
+                GraphicsDevice,
+                _debugFont);
+            Console.WriteLine("Created emergency crafting UI");
+                
             // Register crafting UI with UI manager for drawing
             _uiManager.RegisterUIElement("crafting", _craftingUI.Draw, UIManager.Layer.Top);
             Console.WriteLine("Registered CraftingUI with UIManager");
