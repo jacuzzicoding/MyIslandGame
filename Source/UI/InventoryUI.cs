@@ -43,6 +43,13 @@ namespace MyIslandGame.UI
         /// <param name="font">The font to use for text rendering.</param>
         public InventoryUI(SpriteBatch spriteBatch, GraphicsDevice graphicsDevice, InventorySystem inventorySystem, EntityManager entityManager, SpriteFont font)
         {
+            if (font == null)
+            {
+                // Use a fallback method to create a basic font
+                // or throw a more descriptive exception
+                throw new ArgumentNullException(nameof(font), "A valid SpriteFont is required for InventoryUI");
+            }
+            
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             _inventorySystem = inventorySystem ?? throw new ArgumentNullException(nameof(inventorySystem));

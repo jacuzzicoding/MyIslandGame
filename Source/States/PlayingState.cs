@@ -14,6 +14,7 @@ using MyIslandGame.Inventory;
 using MyIslandGame.Rendering;
 using MyIslandGame.UI;
 using MyIslandGame.World;
+using MyIslandGame.Crafting;
 
 namespace MyIslandGame.States
 {
@@ -21,10 +22,10 @@ namespace MyIslandGame.States
     /// The main gameplay state where the player explores and interacts with the island.
     /// </summary>
     public class PlayingState : GameState
-    {
-        private EntityManager _entityManager;
-        private InputManager _inputManager;
-        private SpriteBatch _spriteBatch;
+        {
+            private EntityManager _entityManager;
+            private InputManager _inputManager;
+            private SpriteBatch _spriteBatch;
         
         private RenderSystem _renderSystem;
         private MovementSystem _movementSystem;
@@ -32,6 +33,10 @@ namespace MyIslandGame.States
         private EnvironmentalObjectSystem _environmentalObjectSystem;
         private InventorySystem _inventorySystem;
         private GatheringSystem _gatheringSystem;
+        private CraftingSystem _craftingSystem;
+        private RecipeManager _recipeManager; // Add this line
+        private CraftingUI _craftingUI;
+        private EmergencyCraftingUI _emergencyCraftingUI; // Add emergency UI
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -76,6 +81,7 @@ namespace MyIslandGame.States
             
             // Initialize resource manager
             _resourceManager = new ResourceManager(game.GraphicsDevice);
+            _recipeManager = new RecipeManager(_resourceManager, game.GraphicsDevice); // Add GraphicsDevice parameter
         }
         
         /// <summary>
@@ -91,6 +97,10 @@ namespace MyIslandGame.States
             _inputManager.RegisterAction("MoveLeft", new InputAction().MapKey(Keys.A).MapKey(Keys.Left));
             _inputManager.RegisterAction("MoveRight", new InputAction().MapKey(Keys.D).MapKey(Keys.Right));
             _inputManager.RegisterAction("Interact", new InputAction().MapKey(Keys.E).MapKey(Keys.Space));
+            _inputManager.RegisterAction("ToggleCrafting", new InputAction().MapKey(Keys.C)); // Add this line
+            _inputManager.RegisterAction("OpenCrafting", new InputAction().MapKey(Keys.C));
+            _inputManager.RegisterAction("CloseCrafting", new InputAction().MapKey(Keys.Escape));
+            _inputManager.RegisterAction("Craft", new InputAction().MapMouseButton(MouseButton.Left));
             
             // Create systems
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -100,6 +110,7 @@ namespace MyIslandGame.States
             _environmentalObjectSystem = new EnvironmentalObjectSystem(_entityManager, _gameTimeManager, GraphicsDevice);
             _inventorySystem = new InventorySystem(_entityManager, _inputManager);
             _gatheringSystem = new GatheringSystem(_entityManager, _inputManager, _resourceManager);
+            _craftingSystem = new CraftingSystem(_entityManager, _recipeManager, _inputManager, _resourceManager); // Modify this line
             
             // Add systems to entity manager
             _entityManager.AddSystem(_movementSystem);
@@ -107,6 +118,7 @@ namespace MyIslandGame.States
             _entityManager.AddSystem(_environmentalObjectSystem);
             _entityManager.AddSystem(_inventorySystem);
             _entityManager.AddSystem(_gatheringSystem);
+            _entityManager.AddSystem(_craftingSystem); // Add this line
             
             // Set up collision handlers
             _collisionSystem.CollisionOccurred += HandleCollision;
@@ -115,6 +127,11 @@ namespace MyIslandGame.States
             
             // Set up resource gathering feedback
             _gatheringSystem.ResourceGathered += OnResourceGathered;
+
+            // Remove duplicate initialization - these are already set up earlier
+            // Just make sure recipes are initialized
+            _recipeManager.InitializeDefaultRecipes();
+            Console.WriteLine("Initialized default recipes");
         }
         
         /// <summary>
@@ -136,17 +153,30 @@ namespace MyIslandGame.States
             {
                 _debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Fallback: Create a temporary debug font message
-                Console.WriteLine("Warning: DebugFont not found. Add a SpriteFont to Content/Fonts/DebugFont");
+                Console.WriteLine($"Error loading DebugFont: {ex.Message}");
+                // Create a basic font texture here or use an alternative approach
+            }
+            
+            // Ensure we don't proceed with null font
+            if (_debugFont == null)
+            {
+                throw new InvalidOperationException("Failed to load DebugFont and no fallback was created. Add a SpriteFont at Content/Fonts/DebugFont");
             }
             
             // Set the font in the UI manager
-            if (_debugFont != null)
-            {
-                _uiManager.SetDefaultFont(_debugFont);
-            }
+            _uiManager.SetDebugFont(_debugFont);
+            
+            // Now that font is loaded, initialize UI manager
+            _uiManager.Initialize(
+                _entityManager, 
+                _inputManager, 
+                _resourceManager, 
+                _craftingSystem,
+                _inventorySystem);
+            
+            _uiManager.LoadContent(Content);
             
             // Create player entity
             _playerEntity = _entityManager.CreateEntity();
@@ -184,15 +214,102 @@ namespace MyIslandGame.States
             _playerEntity.AddComponent(playerComponent);
             _playerEntity.AddComponent(inventoryComponent);
             
-            // Initialize inventory UI
+            // Ensure the debug font is loaded
+            if (_debugFont == null)
+            {
+                // Create a basic font if the loading failed
+                _debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
+            }
+
+            // Initialize inventory UI with the font we now know exists
             _inventoryUI = new InventoryUI(_spriteBatch, GraphicsDevice, _inventorySystem, _entityManager, _debugFont);
             
             // Add some starter tools to player inventory
             inventoryComponent.Inventory.TryAddItem(Tool.CreateAxe(GraphicsDevice));
             inventoryComponent.Inventory.TryAddItem(Tool.CreatePickaxe(GraphicsDevice));
             
+            // Add starter materials for testing crafting
+            if (_resourceManager.TryGetResource("wood_log", out var woodLog))
+            {
+                Item woodLogItem = Item.FromResource(woodLog);
+                inventoryComponent.Inventory.TryAddItem(woodLogItem, 16); // Add more for testing
+                Console.WriteLine("Added 16 wood logs to player inventory for crafting testing");
+            }
+            
+            // Add some stone resources
+            if (_resourceManager.TryGetResource("stone", out var stone))
+            {
+                Item stoneItem = Item.FromResource(stone);
+                inventoryComponent.Inventory.TryAddItem(stoneItem, 8);
+                Console.WriteLine("Added 8 stone to player inventory for crafting testing");
+            }
+            
+            // Add sticks if available
+            if (_resourceManager.TryGetResource("stick", out var stick))
+            {
+                Item stickItem = Item.FromResource(stick);
+                inventoryComponent.Inventory.TryAddItem(stickItem, 8);
+                Console.WriteLine("Added 8 sticks to player inventory for crafting testing");
+            }
+            
             // Create environmental objects
             PopulateWorldWithEnvironmentalObjects();
+
+            // Initialize crafting UI
+            _craftingUI = new CraftingUI(
+                _craftingSystem,
+                _inputManager,
+                _entityManager,
+                _uiManager,
+                GraphicsDevice,
+                _resourceManager);
+                
+            // Create emergency crafting UI (guaranteed to work)
+            _emergencyCraftingUI = new EmergencyCraftingUI(
+                _craftingSystem,
+                GraphicsDevice,
+                _debugFont);
+            Console.WriteLine("Created emergency crafting UI");
+                
+            // Register crafting UI with UI manager for drawing
+            _uiManager.RegisterUIElement("crafting", _craftingUI.Draw, UIManager.Layer.Top);
+            Console.WriteLine("Registered CraftingUI with UIManager");
+            
+            // Position player in the center of a valid land tile
+            mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
+
+            // Find a guaranteed valid position for the player
+            bool foundValidPosition = false;
+            Vector2 spawnPosition = mapCenter;
+
+            // Try center first, then spiral out to find valid position
+            for (int radius = 0; radius < 10 && !foundValidPosition; radius++)
+            {
+                for (int x = -radius; x <= radius && !foundValidPosition; x++)
+                {
+                    for (int y = -radius; y <= radius && !foundValidPosition; y++)
+                    {
+                        if (Math.Abs(x) != radius && Math.Abs(y) != radius)
+                            continue; // Only check the perimeter of each radius
+                            
+                        Point tilePos = _tileMap.WorldToTile(mapCenter + new Vector2(x * 64, y * 64));
+                        Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                        
+                        if (tile != null && tile.IsPassable && !tile.IsWater)
+                        {
+                            spawnPosition = _tileMap.TileToWorld(tilePos.X, tilePos.Y) + new Vector2(32, 32);
+                            foundValidPosition = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            playerTransform = new TransformComponent(spawnPosition);
+            
+            // Add crafting component to player
+            var craftingComponent = new CraftingComponent(CraftingStationType.None);
+            _playerEntity.AddComponent(craftingComponent);
         }
         
         /// <summary>
@@ -411,6 +528,32 @@ namespace MyIslandGame.States
             
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
+
+            // Handle crafting toggle
+            if (_inputManager.WasActionTriggered("ToggleCrafting") || _inputManager.WasActionTriggered("OpenCrafting"))
+            {
+                if (_craftingSystem.IsCraftingActive)
+                {
+                    _craftingSystem.CloseCrafting();
+                }
+                else
+                {
+                    // Use a basic crafting grid (2x2)
+                    _craftingSystem.OpenCrafting(CraftingStationType.None);
+                }
+                
+                Console.WriteLine($"Crafting toggled: {_craftingSystem.IsCraftingActive} with station type: {_craftingSystem.CurrentStation}");
+            }
+            else if (_inputManager.WasActionTriggered("CloseCrafting") && _craftingSystem.IsCraftingActive)
+            {
+                _craftingSystem.CloseCrafting();
+                Console.WriteLine("Crafting closed via Escape key");
+            }
+
+            _uiManager.Update(gameTime);
+
+            // Update crafting UI
+            _craftingUI.Update(gameTime);
         }
         
         /// <summary>
@@ -490,6 +633,21 @@ namespace MyIslandGame.States
                 
                 _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
             }
+
+            // Draw UI elements - Proper SpriteBatch management
+            _spriteBatch.Begin();
+            
+            // Draw normal UI
+            _uiManager.Draw();
+            
+            // DIRECT EMERGENCY CRAFTING UI - Guaranteed to work
+            if (_craftingSystem.IsCraftingActive)
+            {
+                _emergencyCraftingUI.Draw(_spriteBatch);
+                Console.WriteLine("Drew emergency crafting UI");
+            }
+            
+            _spriteBatch.End();
         }
         
         /// <summary>

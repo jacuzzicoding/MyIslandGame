@@ -1,7 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Content;
+using MyIslandGame.Crafting;
+using MyIslandGame.Core.Resources;
+using MyIslandGame.ECS;
+using MyIslandGame.Input;
+using MyIslandGame.ECS.Systems;
 
 namespace MyIslandGame.UI
 {
@@ -12,7 +20,21 @@ namespace MyIslandGame.UI
     {
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
-        private SpriteFont _defaultFont;
+        private SpriteFont _debugFont;
+        
+        // UI Components
+        private InventoryUI _inventoryUI;
+        private CraftingUI _craftingUI;
+
+        public enum Layer
+        {
+            Bottom,
+            Middle,
+            Top
+        }
+
+        private Dictionary<string, (Action<SpriteBatch> drawAction, Layer layer)> _uiElements 
+            = new Dictionary<string, (Action<SpriteBatch>, Layer)>();
         
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManager"/> class.
@@ -25,12 +47,140 @@ namespace MyIslandGame.UI
         }
         
         /// <summary>
+        /// Initialize UI components
+        /// </summary>
+        public void Initialize(
+            EntityManager entityManager, 
+            InputManager inputManager,
+            ResourceManager resourceManager,
+            CraftingSystem craftingSystem,
+            InventorySystem inventorySystem)
+        {
+            // Initialize inventory UI
+            _inventoryUI = new InventoryUI(
+                _spriteBatch, 
+                _graphicsDevice, 
+                inventorySystem, 
+                entityManager, 
+                _debugFont);
+            
+            // Initialize crafting UI
+            _craftingUI = new CraftingUI(
+                craftingSystem,
+                inputManager,
+                entityManager,
+                this,
+                _graphicsDevice,
+                resourceManager);
+        }
+        
+        /// <summary>
+        /// Loads content for UI components
+        /// </summary>
+        public void LoadContent(ContentManager content)
+        {
+            try
+            {
+                Console.WriteLine("Attempting to load font: Fonts/DebugFont");
+                _debugFont = content.Load<SpriteFont>("Fonts/DebugFont");
+                Console.WriteLine("Successfully loaded font");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR loading font: {ex.Message}");
+                Console.WriteLine($"Content root directory: {content.RootDirectory}");
+                
+                // Try to list available content files
+                try {
+                    var contentPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, content.RootDirectory, "Fonts");
+                    Console.WriteLine($"Looking in: {contentPath}");
+                    if (Directory.Exists(contentPath)) {
+                        Console.WriteLine("Files in directory:");
+                        foreach (var file in Directory.GetFiles(contentPath)) {
+                            Console.WriteLine($"  - {Path.GetFileName(file)}");
+                        }
+                    } else {
+                        Console.WriteLine("Directory does not exist!");
+                    }
+                } catch { /* Ignore errors in diagnostic code */ }
+                
+                throw; // Re-throw the exception
+            }
+            
+            // Load content for UI components
+            if (_craftingUI != null)
+            {
+                _craftingUI.LoadContent(content);
+            }
+        }
+        
+        /// <summary>
+        /// Updates all UI components
+        /// </summary>
+        public void Update(GameTime gameTime)
+        {
+            // Update inventory UI
+            if (_inventoryUI != null)
+            {
+                _inventoryUI.Update();
+            }
+            
+            // Update crafting UI
+            if (_craftingUI != null)
+            {
+                _craftingUI.Update(gameTime);
+            }
+        }
+        
+        /// <summary>
+        /// Draws all UI components
+        /// </summary>
+        public void Draw()
+        {
+            // IMPORTANT: Don't call SpriteBatch.Begin or SpriteBatch.End here
+            // The calling code should handle this properly
+            
+            // Draw inventory UI
+            if (_inventoryUI != null)
+            {
+                _inventoryUI.Draw();
+            }
+            
+            // Draw crafting UI if active
+            if (_craftingUI != null)
+            {
+                _craftingUI.Draw(_spriteBatch);
+            }
+
+            // Draw elements in order by layer
+            foreach (Layer layer in Enum.GetValues(typeof(Layer)))
+            {
+                foreach (var element in _uiElements.Where(e => e.Value.layer == layer))
+                {
+                    element.Value.drawAction(_spriteBatch);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sets the default font to use for text.
         /// </summary>
         /// <param name="font">The sprite font to use.</param>
-        public void SetDefaultFont(SpriteFont font)
+        public void SetDebugFont(SpriteFont font)
         {
-            _defaultFont = font ?? throw new ArgumentNullException(nameof(font));
+            _debugFont = font ?? throw new ArgumentNullException(nameof(font));
+        }
+        
+        /// <summary>
+        /// Gets available debug fonts for use by UI elements.
+        /// </summary>
+        /// <returns>An array of available fonts.</returns>
+        public SpriteFont[] GetDebugFonts()
+        {
+            if (_debugFont != null)
+                return new[] { _debugFont };
+            
+            return Array.Empty<SpriteFont>();
         }
         
         /// <summary>
@@ -42,13 +192,13 @@ namespace MyIslandGame.UI
         /// <param name="scale">The text scale.</param>
         public void DrawText(string text, Vector2 position, Color color, float scale = 1.0f)
         {
-            if (_defaultFont == null)
+            if (_debugFont == null)
             {
-                throw new InvalidOperationException("Default font not set. Call SetDefaultFont first.");
+                throw new InvalidOperationException("Default font not set. Call SetDebugFont first.");
             }
             
             _spriteBatch.Begin();
-            _spriteBatch.DrawString(_defaultFont, text, position, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            _spriteBatch.DrawString(_debugFont, text, position, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
             _spriteBatch.End();
         }
         
@@ -67,9 +217,9 @@ namespace MyIslandGame.UI
             Color? backgroundColor = null,
             Color? textColor = null)
         {
-            if (_defaultFont == null)
+            if (_debugFont == null)
             {
-                throw new InvalidOperationException("Default font not set. Call SetDefaultFont first.");
+                throw new InvalidOperationException("Default font not set. Call SetDebugFont first.");
             }
             
             // Use default colors if not specified
@@ -84,7 +234,7 @@ namespace MyIslandGame.UI
             foreach (string text in debugTexts)
             {
                 textList.Add(text);
-                Vector2 size = _defaultFont.MeasureString(text);
+                Vector2 size = _debugFont.MeasureString(text);
                 maxWidth = Math.Max(maxWidth, size.X);
                 totalHeight += size.Y;
             }
@@ -110,18 +260,26 @@ namespace MyIslandGame.UI
             foreach (string text in textList)
             {
                 _spriteBatch.DrawString(
-                    _defaultFont,
+                    _debugFont,
                     text,
                     new Vector2(position.X + padding, currentY),
                     textColor.Value);
                 
-                currentY += _defaultFont.MeasureString(text).Y + padding / 2;
+                currentY += _debugFont.MeasureString(text).Y + padding / 2;
             }
             
             _spriteBatch.End();
             
             // Clean up the temporary texture
             pixel.Dispose();
+        }
+
+        public void RegisterUIElement(string id, Action<SpriteBatch> drawAction, Layer layer)
+        {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentNullException(nameof(id));
+                
+            _uiElements[id] = (drawAction, layer);
         }
     }
 }

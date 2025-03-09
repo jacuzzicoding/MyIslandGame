@@ -18,7 +18,7 @@ namespace MyIslandGame.ECS.Systems
         private readonly Random _random = new Random();
         
         // Range for gathering interactions
-        private const float GatheringRange = 150f; // Increased from 100f for easier gathering
+        private const float GatheringRange = 350f; // Significantly increased for easier gathering
         
         // Cooldown between gathering actions
         private readonly TimeSpan _gatheringCooldown = TimeSpan.FromSeconds(0.5);
@@ -116,15 +116,23 @@ namespace MyIslandGame.ECS.Systems
             
             if (target == null)
             {
+                Console.WriteLine("No gatherable entity found within range");
                 return false;
             }
             
             // Get the selected tool type
             var inventoryComponent = playerEntity.GetComponent<InventoryComponent>();
             string toolType = inventoryComponent.GetSelectedToolType();
+            Console.WriteLine($"Using tool type: {toolType ?? "none"} on environmental object");
+            
+            // Get info about the environmental object
+            var envComponent = target.GetComponent<EnvironmentalObjectComponent>();
+            Console.WriteLine($"Found {envComponent.ObjectType} with health {envComponent.Health} and harvestable: {envComponent.IsHarvestable}");
             
             // Gather from environmental object
-            return GatherFromEnvironmentalObject(playerEntity, target, toolType);
+            bool result = GatherFromEnvironmentalObject(playerEntity, target, toolType);
+            Console.WriteLine($"Gathering result: {result}");
+            return result;
         }
 
         /// <summary>

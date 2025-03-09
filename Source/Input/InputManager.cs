@@ -78,7 +78,7 @@ namespace MyIslandGame.Input
         /// </summary>
         /// <param name="actionName">The name of the action.</param>
         /// <returns>True if the action was just pressed, otherwise false.</returns>
-        public bool WasActionPressed(string actionName)
+        public bool WasActionTriggered(string actionName)
         {
             return _actions.TryGetValue(actionName, out var action) && action.WasPressed;
         }
@@ -91,6 +91,28 @@ namespace MyIslandGame.Input
         public bool WasActionReleased(string actionName)
         {
             return _actions.TryGetValue(actionName, out var action) && action.WasReleased;
+        }
+        
+        /// <summary>
+        /// Gets whether an action was triggered this frame.
+        /// Alias for WasActionTriggered for backward compatibility.
+        /// </summary>
+        /// <param name="actionName">The name of the action.</param>
+        /// <returns>True if the action was triggered, otherwise false.</returns>
+        public bool IsActionTriggered(string actionName)
+        {
+            return WasActionTriggered(actionName);
+        }
+
+        /// <summary>
+        /// Gets whether an action was released this frame.
+        /// Alias for WasActionReleased for backward compatibility.
+        /// </summary>
+        /// <param name="actionName">The name of the action.</param>
+        /// <returns>True if the action was released, otherwise false.</returns>
+        public bool IsActionReleased(string actionName)
+        {
+            return WasActionReleased(actionName);
         }
         
         /// <summary>

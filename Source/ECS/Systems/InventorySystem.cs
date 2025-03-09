@@ -62,7 +62,7 @@ namespace MyIslandGame.ECS.Systems
                 // Handle hotbar selection with number keys
                 for (int i = 0; i < inventoryComponent.Inventory.HotbarSize; i++)
                 {
-                    if (_inputManager.WasActionPressed($"Hotbar{i + 1}"))
+                    if (_inputManager.WasActionTriggered($"Hotbar{i + 1}"))
                     {
                         inventoryComponent.SelectHotbarSlot(i);
                         break;
@@ -70,32 +70,32 @@ namespace MyIslandGame.ECS.Systems
                 }
                 
                 // Handle scrolling through hotbar
-                if (_inputManager.WasActionPressed("ScrollHotbarLeft"))
+                if (_inputManager.WasActionTriggered("ScrollHotbarLeft"))
                 {
                     int newIndex = (inventoryComponent.SelectedHotbarIndex - 1 + inventoryComponent.Inventory.HotbarSize) % inventoryComponent.Inventory.HotbarSize;
                     inventoryComponent.SelectHotbarSlot(newIndex);
                 }
-                else if (_inputManager.WasActionPressed("ScrollHotbarRight"))
+                else if (_inputManager.WasActionTriggered("ScrollHotbarRight"))
                 {
                     int newIndex = (inventoryComponent.SelectedHotbarIndex + 1) % inventoryComponent.Inventory.HotbarSize;
                     inventoryComponent.SelectHotbarSlot(newIndex);
                 }
                 
                 // Toggle inventory visibility
-                if (_inputManager.WasActionPressed("ToggleInventory"))
+                if (_inputManager.WasActionTriggered("ToggleInventory"))
                 {
                     _inventoryVisible = !_inventoryVisible;
                     OnInventoryVisibilityChanged(_inventoryVisible);
                 }
                 
                 // Use selected item
-                if (_inputManager.WasActionPressed("UseItem"))
+                if (_inputManager.WasActionTriggered("UseItem"))
                 {
                     inventoryComponent.UseSelectedItem();
                 }
                 
                 // Drop selected item
-                if (_inputManager.WasActionPressed("DropItem") && !_inventoryVisible)
+                if (_inputManager.WasActionTriggered("DropItem") && !_inventoryVisible)
                 {
                     var selectedItem = inventoryComponent.GetSelectedItem();
                     
