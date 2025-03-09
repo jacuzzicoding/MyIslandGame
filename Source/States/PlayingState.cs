@@ -1,4 +1,4 @@
-using System;
+        private EmergencyCraftingUI _emergencyCraftingUI;using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -630,11 +630,9 @@ namespace MyIslandGame.States
             _spriteBatch.Begin();
             _uiManager.Draw();
             
-            // Add debug visualization for crafting UI when active
+            // IMPORTANT: Emergency crafting UI drawing - guaranteed visible
             if (_craftingSystem.IsCraftingActive)
             {
-                _spriteBatch.Begin();
-                
                 // Draw a white background rectangle
                 _spriteBatch.Draw(
                     _lightOverlayTexture,
@@ -642,13 +640,13 @@ namespace MyIslandGame.States
                         GraphicsDevice.Viewport.Width / 2 - 200,
                         GraphicsDevice.Viewport.Height / 2 - 150,
                         400, 300),
-                    new Color(50, 50, 150, 170)
+                    new Color(255, 20, 147, 200)  // Hot pink with transparency
                 );
                 
                 // Draw some text to confirm UI is rendering
                 _spriteBatch.DrawString(
                     _debugFont,
-                    $"Crafting UI Active - Station: {_craftingSystem.CurrentStation}",
+                    $"EMERGENCY CRAFTING UI - Station: {_craftingSystem.CurrentStation}",
                     new Vector2(GraphicsDevice.Viewport.Width / 2 - 180, GraphicsDevice.Viewport.Height / 2 - 130),
                     Color.White
                 );
@@ -665,7 +663,7 @@ namespace MyIslandGame.States
                                 GraphicsDevice.Viewport.Width / 2 - 150 + (x * 70),
                                 GraphicsDevice.Viewport.Height / 2 - 100 + (y * 70),
                                 60, 60),
-                            new Color(30, 30, 30, 200)
+                            new Color(135, 206, 250, 200)  // Light sky blue with transparency
                         );
                     }
                 }
@@ -677,10 +675,8 @@ namespace MyIslandGame.States
                         GraphicsDevice.Viewport.Width / 2 + 100,
                         GraphicsDevice.Viewport.Height / 2 - 30,
                         60, 60),
-                    new Color(60, 60, 30, 200)
+                    new Color(255, 215, 0, 200)  // Gold with transparency
                 );
-                
-                _spriteBatch.End();
             }
             _spriteBatch.End();
         }
