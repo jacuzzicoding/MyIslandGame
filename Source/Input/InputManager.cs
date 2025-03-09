@@ -78,7 +78,7 @@ namespace MyIslandGame.Input
         /// </summary>
         /// <param name="actionName">The name of the action.</param>
         /// <returns>True if the action was just pressed, otherwise false.</returns>
-        public bool WasActionPressed(string actionName)
+        public bool WasActionTriggered(string actionName)
         {
             return _actions.TryGetValue(actionName, out var action) && action.WasPressed;
         }
@@ -95,13 +95,13 @@ namespace MyIslandGame.Input
         
         /// <summary>
         /// Gets whether an action was triggered this frame.
-        /// Alias for WasActionPressed for backward compatibility.
+        /// Alias for WasActionTriggered for backward compatibility.
         /// </summary>
         /// <param name="actionName">The name of the action.</param>
         /// <returns>True if the action was triggered, otherwise false.</returns>
         public bool IsActionTriggered(string actionName)
         {
-            return WasActionPressed(actionName);
+            return WasActionTriggered(actionName);
         }
 
         /// <summary>
