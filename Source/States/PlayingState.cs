@@ -282,11 +282,16 @@ namespace MyIslandGame.States
                 _debugFont);
             Console.WriteLine("Created modern crafting UI using the new architecture");
                 
-            // Register crafting UIs with UI manager for drawing
-            _uiManager.RegisterUIElement("crafting", _craftingUI.Draw, UIManager.Layer.Top);
-            // Register the modern UI using new architecture
-            _uiManager.RegisterUIElement("modern-crafting", _modernCraftingUI);
-            Console.WriteLine("Registered both CraftingUIs with UIManager");
+            // Register the ModernCraftingUI as the primary crafting UI
+            _uiManager.RegisterUIElement("crafting-ui", _modernCraftingUI);
+            
+            // Initialize the ModernCraftingUI
+            _modernCraftingUI.Initialize();
+            
+            // For backwards compatibility during development, keep the legacy CraftingUI (commented out when ready to remove)
+            // _uiManager.RegisterUIElement("legacy-crafting", _craftingUI.Draw, UIManager.Layer.Top);
+            
+            Console.WriteLine("Registered ModernCraftingUI with UIManager");
             
             // Position player in the center of a valid land tile
             mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
