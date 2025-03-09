@@ -124,10 +124,51 @@ namespace MyIslandGame.UI
         public void Draw(SpriteBatch spriteBatch)
         {
             if (!IsActive)
+            {
                 return;
+            }
+            
+            Console.WriteLine("CraftingUI.Draw called - UI is active");
+            
+            // Create debug font if null
+            if (_font == null)
+            {
+                SpriteFont[] fonts = _uiManager.GetDebugFonts();
+                if (fonts != null && fonts.Length > 0)
+                {
+                    _font = fonts[0];
+                    Console.WriteLine("Set font from UI Manager");
+                }
+            }
+            
+            // Always update layout before drawing
+            UpdateLayout();
+            
+            // Draw a test rectangle to verify rendering is working
+            Texture2D pixelTexture = new Texture2D(_graphicsDevice, 1, 1);
+            pixelTexture.SetData(new[] { Color.White });
+            spriteBatch.Draw(pixelTexture, new Rectangle(400, 300, 200, 150), Color.Purple);
             
             // Draw background
             spriteBatch.Draw(_backgroundTexture, _craftingGridBounds, Color.White);
+            
+            // Draw title based on station type
+            if (_font != null)
+            {
+                string title = _craftingSystem.CurrentStation == CraftingStationType.None ? 
+                    "Basic Crafting (2x2)" : 
+                    $"{_craftingSystem.CurrentStation} (3x3)";
+                
+                Vector2 textSize = _font.MeasureString(title);
+                Vector2 position = new Vector2(
+                    _craftingGridBounds.X + (_craftingGridBounds.Width - textSize.X) / 2,
+                    _craftingGridBounds.Y - textSize.Y - 5
+                );
+                
+                // Draw shadow and text
+                spriteBatch.DrawString(_font, title, position + new Vector2(1, 1), Color.Black);
+                spriteBatch.DrawString(_font, title, position, Color.White);
+            }
             
             // Draw crafting grid slots
             DrawCraftingGrid(spriteBatch);
@@ -140,6 +181,9 @@ namespace MyIslandGame.UI
             {
                 DrawDraggedItem(spriteBatch);
             }
+            
+            // Clean up
+            pixelTexture.Dispose();
         }
 
         #region UI Setup and Layout
