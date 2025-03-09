@@ -158,6 +158,9 @@ namespace MyIslandGame.Crafting
             _craftingGrid.GridChanged += OnCraftingGridChanged;
             
             Console.WriteLine($"Crafting opened with station: {stationType}");
+            
+            // Update the crafting result immediately
+            UpdateCraftingResult();
         }
 
         /// <summary>
