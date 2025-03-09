@@ -321,12 +321,12 @@ namespace MyIslandGame.Crafting
 
         private void AddWoodPlankRecipe()
         {
-            // Check if resources exist
+            // Check if resources exist using inline out variables
             if (!_resourceManager.TryGetResource("wood_log", out var woodLog) ||
                 !_resourceManager.TryGetResource("wood_plank", out var woodPlank))
                 return;
             
-            // Wood Log -> 4 Wood Planks
+            // Wood Log -> 4 Wood Planks (basic recipe for inventory crafting)
             var ingredient = RecipeIngredient.FromResource(woodLog);
             var result = new RecipeResult(woodPlank.Id, 4, woodPlank.Name);
             
@@ -335,12 +335,13 @@ namespace MyIslandGame.Crafting
                 "Wood Planks",
                 "Convert a log into wooden planks",
                 RecipeCategory.Resources,
-                CraftingStationType.None,
+                CraftingStationType.None, // Works with basic crafting
                 new List<RecipeIngredient> { ingredient },
                 new List<RecipeResult> { result }
             );
             
             AddRecipe(recipe);
+            Console.WriteLine("Added Wood Planks recipe (basic crafting)");
         }
 
         private void AddStickRecipe()
@@ -369,16 +370,29 @@ namespace MyIslandGame.Crafting
 
         private void AddCraftingTableRecipe()
         {
-            // Check if resources exist
-            if (!_resourceManager.TryGetResource("wood_plank", out var woodPlank) ||
-                !_resourceManager.TryGetResource("crafting_table", out var craftingTable))
+            // Try to get wood_planks first
+            bool canUseWoodPlanks = _resourceManager.TryGetResource("wood_plank", out var woodPlank);
+            Resource woodLog = null;
+            
+            // If wood planks aren't available, try to use wood logs directly
+            if (!canUseWoodPlanks)
+            {
+                if (!_resourceManager.TryGetResource("wood_log", out woodLog))
+                    return; // Neither resource exists
+            }
+                
+            // Make sure crafting table resource exists
+            if (!_resourceManager.TryGetResource("crafting_table", out var craftingTable))
                 return;
             
-            // 4 Wood Planks in 2x2 grid -> Crafting Table
-            var ingredient = new RecipeIngredient(woodPlank.Id, 1, false, woodPlank.Name);
+            // 4 Wood Planks (or 4 Logs) in 2x2 grid -> Crafting Table
+            var ingredient = canUseWoodPlanks ? 
+                new RecipeIngredient(woodPlank.Id, 1, false, woodPlank.Name) :
+                new RecipeIngredient(woodLog.Id, 1, false, woodLog.Name);
+                
             var result = new RecipeResult(craftingTable.Id, 1, craftingTable.Name);
             
-            // Define pattern for a 2x2 grid filled with wood planks
+            // Define pattern for a 2x2 grid filled with wood planks or logs
             string[] pattern = new string[] {
                 "##",
                 "##"
@@ -400,6 +414,7 @@ namespace MyIslandGame.Crafting
             );
             
             AddRecipe(recipe);
+            Console.WriteLine($"Added Crafting Table recipe using {(canUseWoodPlanks ? "wood planks" : "wood logs")}");
         }
 
         private void AddWoodenAxeRecipe()
