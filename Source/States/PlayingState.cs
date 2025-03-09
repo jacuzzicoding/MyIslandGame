@@ -127,12 +127,10 @@ namespace MyIslandGame.States
             // Set up resource gathering feedback
             _gatheringSystem.ResourceGathered += OnResourceGathered;
 
-            // Initialize recipe manager and crafting system
-            _recipeManager = new RecipeManager(_resourceManager, GraphicsDevice);
+            // Remove duplicate initialization - these are already set up earlier
+            // Just make sure recipes are initialized
             _recipeManager.InitializeDefaultRecipes();
-
-            _craftingSystem = new CraftingSystem(_entityManager, _recipeManager, _inputManager, _resourceManager);
-            _entityManager.AddSystem(_craftingSystem);
+            Console.WriteLine("Initialized default recipes");
         }
         
         /// <summary>
@@ -233,8 +231,24 @@ namespace MyIslandGame.States
             if (_resourceManager.TryGetResource("wood_log", out var woodLog))
             {
                 Item woodLogItem = Item.FromResource(woodLog);
-                inventoryComponent.Inventory.TryAddItem(woodLogItem, 8);
-                Console.WriteLine("Added wood logs to player inventory for crafting testing");
+                inventoryComponent.Inventory.TryAddItem(woodLogItem, 16); // Add more for testing
+                Console.WriteLine("Added 16 wood logs to player inventory for crafting testing");
+            }
+            
+            // Add some stone resources
+            if (_resourceManager.TryGetResource("stone", out var stone))
+            {
+                Item stoneItem = Item.FromResource(stone);
+                inventoryComponent.Inventory.TryAddItem(stoneItem, 8);
+                Console.WriteLine("Added 8 stone to player inventory for crafting testing");
+            }
+            
+            // Add sticks if available
+            if (_resourceManager.TryGetResource("stick", out var stick))
+            {
+                Item stickItem = Item.FromResource(stick);
+                inventoryComponent.Inventory.TryAddItem(stickItem, 8);
+                Console.WriteLine("Added 8 sticks to player inventory for crafting testing");
             }
             
             // Create environmental objects
@@ -251,6 +265,7 @@ namespace MyIslandGame.States
                 
             // Register crafting UI with UI manager for drawing
             _uiManager.RegisterUIElement("crafting", _craftingUI.Draw, UIManager.Layer.Top);
+            Console.WriteLine("Registered CraftingUI with UIManager");
             
             // Position player in the center of a valid land tile
             mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
@@ -507,14 +522,24 @@ namespace MyIslandGame.States
             _entityManager.Update(gameTime);
 
             // Handle crafting toggle
-            if (_inputManager.WasActionTriggered("ToggleCrafting"))
+            if (_inputManager.WasActionTriggered("ToggleCrafting") || _inputManager.WasActionTriggered("OpenCrafting"))
             {
                 if (_craftingSystem.IsCraftingActive)
+                {
                     _craftingSystem.CloseCrafting();
+                }
                 else
+                {
+                    // Use a basic crafting grid (2x2)
                     _craftingSystem.OpenCrafting(CraftingStationType.None);
+                }
                 
-                Console.WriteLine($"Crafting toggled: {_craftingSystem.IsCraftingActive}");
+                Console.WriteLine($"Crafting toggled: {_craftingSystem.IsCraftingActive} with station type: {_craftingSystem.CurrentStation}");
+            }
+            else if (_inputManager.WasActionTriggered("CloseCrafting") && _craftingSystem.IsCraftingActive)
+            {
+                _craftingSystem.CloseCrafting();
+                Console.WriteLine("Crafting closed via Escape key");
             }
 
             _uiManager.Update(gameTime);
@@ -601,7 +626,63 @@ namespace MyIslandGame.States
                 _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
             }
 
+            // Draw UI elements
+            _spriteBatch.Begin();
             _uiManager.Draw();
+            
+            // Add debug visualization for crafting UI when active
+            if (_craftingSystem.IsCraftingActive)
+            {
+                _spriteBatch.Begin();
+                
+                // Draw a white background rectangle
+                _spriteBatch.Draw(
+                    _lightOverlayTexture,
+                    new Rectangle(
+                        GraphicsDevice.Viewport.Width / 2 - 200,
+                        GraphicsDevice.Viewport.Height / 2 - 150,
+                        400, 300),
+                    new Color(50, 50, 150, 170)
+                );
+                
+                // Draw some text to confirm UI is rendering
+                _spriteBatch.DrawString(
+                    _debugFont,
+                    $"Crafting UI Active - Station: {_craftingSystem.CurrentStation}",
+                    new Vector2(GraphicsDevice.Viewport.Width / 2 - 180, GraphicsDevice.Viewport.Height / 2 - 130),
+                    Color.White
+                );
+                
+                // Draw basic grid layout
+                int gridSize = _craftingSystem.CurrentStation == CraftingStationType.None ? 2 : 3;
+                for (int y = 0; y < gridSize; y++)
+                {
+                    for (int x = 0; x < gridSize; x++)
+                    {
+                        _spriteBatch.Draw(
+                            _lightOverlayTexture,
+                            new Rectangle(
+                                GraphicsDevice.Viewport.Width / 2 - 150 + (x * 70),
+                                GraphicsDevice.Viewport.Height / 2 - 100 + (y * 70),
+                                60, 60),
+                            new Color(30, 30, 30, 200)
+                        );
+                    }
+                }
+                
+                // Draw result slot
+                _spriteBatch.Draw(
+                    _lightOverlayTexture,
+                    new Rectangle(
+                        GraphicsDevice.Viewport.Width / 2 + 100,
+                        GraphicsDevice.Viewport.Height / 2 - 30,
+                        60, 60),
+                    new Color(60, 60, 30, 200)
+                );
+                
+                _spriteBatch.End();
+            }
+            _spriteBatch.End();
         }
         
         /// <summary>
