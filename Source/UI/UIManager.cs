@@ -169,6 +169,18 @@ namespace MyIslandGame.UI
         }
         
         /// <summary>
+        /// Gets available debug fonts for use by UI elements.
+        /// </summary>
+        /// <returns>An array of available fonts.</returns>
+        public SpriteFont[] GetDebugFonts()
+        {
+            if (_debugFont != null)
+                return new[] { _debugFont };
+            
+            return Array.Empty<SpriteFont>();
+        }
+        
+        /// <summary>
         /// Draws a text string on the screen.
         /// </summary>
         /// <param name="text">The text to draw.</param>
