@@ -137,6 +137,9 @@ namespace MyIslandGame.UI
         /// </summary>
         public void Draw()
         {
+            // IMPORTANT: Don't call SpriteBatch.Begin or SpriteBatch.End here
+            // The calling code should handle this properly
+            
             // Draw inventory UI
             if (_inventoryUI != null)
             {
