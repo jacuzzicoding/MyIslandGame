@@ -72,7 +72,7 @@ namespace MyIslandGame.ECS.Factories
             // Add environmental object component
             var resourceYields = new List<ResourceYield>
             {
-                new ResourceYield("wood", 5 + (int)(5 * scaleFactor)),
+                new ResourceYield("wood_log", 3 + (int)(3 * scaleFactor)),
                 new ResourceYield("leaves", 3 + (int)(7 * scaleFactor)),
                 new ResourceYield("seeds", 1)  // Small chance of seeds
             };
