@@ -21,6 +21,7 @@ namespace MyIslandGame.UI
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
         private readonly UIRenderManager _renderManager;
+        private InputManager _inputManager;
         private SpriteFont _debugFont;
         
         // UI Components
@@ -63,6 +64,9 @@ namespace MyIslandGame.UI
             CraftingSystem craftingSystem,
             InventorySystem inventorySystem)
         {
+            // Store the input manager for later use
+            _inputManager = inputManager ?? throw new ArgumentNullException(nameof(inputManager));
+            
             // Initialize inventory UI
             _inventoryUI = new InventoryUI(
                 _spriteBatch, 
@@ -132,14 +136,27 @@ namespace MyIslandGame.UI
                 _inventoryUI.Update();
             }
             
-            // Update crafting UI
+            // Update crafting UI (legacy)
             if (_craftingUI != null)
             {
                 _craftingUI.Update(gameTime);
             }
             
-            // Update all new UI elements
+            // Update all modern UI elements through the render manager
             _renderManager.Update(gameTime);
+            
+            // Process input for UI elements
+            HandleUIInput();
+        }
+        
+        /// <summary>
+        /// Handles input for all active UI elements.
+        /// </summary>
+        /// <returns>True if any UI element handled the input, otherwise false.</returns>
+        private bool HandleUIInput()
+        {
+            // Use the UIRenderManager to handle input for modern UI elements
+            return _renderManager.HandleInput(_inputManager);
         }
         
         /// <summary>
