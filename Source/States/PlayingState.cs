@@ -229,6 +229,14 @@ namespace MyIslandGame.States
             inventoryComponent.Inventory.TryAddItem(Tool.CreateAxe(GraphicsDevice));
             inventoryComponent.Inventory.TryAddItem(Tool.CreatePickaxe(GraphicsDevice));
             
+            // Add starter materials for testing crafting
+            if (_resourceManager.TryGetResource("wood_log", out var woodLog))
+            {
+                Item woodLogItem = Item.FromResource(woodLog);
+                inventoryComponent.Inventory.TryAddItem(woodLogItem, 8);
+                Console.WriteLine("Added wood logs to player inventory for crafting testing");
+            }
+            
             // Create environmental objects
             PopulateWorldWithEnvironmentalObjects();
 
@@ -498,10 +506,15 @@ namespace MyIslandGame.States
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
 
-            // In the Update method or your input handling method
-           if (_inputManager.WasActionPressed("ToggleCrafting"))
+            // Handle crafting toggle
+            if (_inputManager.WasActionTriggered("ToggleCrafting"))
             {
-                _craftingSystem.ToggleCrafting();
+                if (_craftingSystem.IsCraftingActive)
+                    _craftingSystem.CloseCrafting();
+                else
+                    _craftingSystem.OpenCrafting(CraftingStationType.None);
+                
+                Console.WriteLine($"Crafting toggled: {_craftingSystem.IsCraftingActive}");
             }
 
             _uiManager.Update(gameTime);
