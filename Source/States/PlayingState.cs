@@ -1,4 +1,4 @@
-        private EmergencyCraftingUI _emergencyCraftingUI;using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,10 +22,10 @@ namespace MyIslandGame.States
     /// The main gameplay state where the player explores and interacts with the island.
     /// </summary>
     public class PlayingState : GameState
-    {
-        private EntityManager _entityManager;
-        private InputManager _inputManager;
-        private SpriteBatch _spriteBatch;
+        {
+            private EntityManager _entityManager;
+            private InputManager _inputManager;
+            private SpriteBatch _spriteBatch;
         
         private RenderSystem _renderSystem;
         private MovementSystem _movementSystem;
@@ -634,58 +634,19 @@ namespace MyIslandGame.States
                 _uiManager.DrawDebugPanel(debugInfo, new Vector2(10, 10));            
             }
 
-            // Draw UI elements
+            // Draw UI elements - Proper SpriteBatch management
             _spriteBatch.Begin();
+            
+            // Draw normal UI
             _uiManager.Draw();
             
-            // IMPORTANT: Emergency crafting UI drawing - guaranteed visible
+            // DIRECT EMERGENCY CRAFTING UI - Guaranteed to work
             if (_craftingSystem.IsCraftingActive)
             {
-                // Draw a white background rectangle
-                _spriteBatch.Draw(
-                    _lightOverlayTexture,
-                    new Rectangle(
-                        GraphicsDevice.Viewport.Width / 2 - 200,
-                        GraphicsDevice.Viewport.Height / 2 - 150,
-                        400, 300),
-                    new Color(255, 20, 147, 200)  // Hot pink with transparency
-                );
-                
-                // Draw some text to confirm UI is rendering
-                _spriteBatch.DrawString(
-                    _debugFont,
-                    $"EMERGENCY CRAFTING UI - Station: {_craftingSystem.CurrentStation}",
-                    new Vector2(GraphicsDevice.Viewport.Width / 2 - 180, GraphicsDevice.Viewport.Height / 2 - 130),
-                    Color.White
-                );
-                
-                // Draw basic grid layout
-                int gridSize = _craftingSystem.CurrentStation == CraftingStationType.None ? 2 : 3;
-                for (int y = 0; y < gridSize; y++)
-                {
-                    for (int x = 0; x < gridSize; x++)
-                    {
-                        _spriteBatch.Draw(
-                            _lightOverlayTexture,
-                            new Rectangle(
-                                GraphicsDevice.Viewport.Width / 2 - 150 + (x * 70),
-                                GraphicsDevice.Viewport.Height / 2 - 100 + (y * 70),
-                                60, 60),
-                            new Color(135, 206, 250, 200)  // Light sky blue with transparency
-                        );
-                    }
-                }
-                
-                // Draw result slot
-                _spriteBatch.Draw(
-                    _lightOverlayTexture,
-                    new Rectangle(
-                        GraphicsDevice.Viewport.Width / 2 + 100,
-                        GraphicsDevice.Viewport.Height / 2 - 30,
-                        60, 60),
-                    new Color(255, 215, 0, 200)  // Gold with transparency
-                );
+                _emergencyCraftingUI.Draw(_spriteBatch);
+                Console.WriteLine("Drew emergency crafting UI");
             }
+            
             _spriteBatch.End();
         }
         
