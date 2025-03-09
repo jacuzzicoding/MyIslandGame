@@ -35,6 +35,7 @@ namespace MyIslandGame.States
         private GatheringSystem _gatheringSystem;
         private CraftingSystem _craftingSystem;
         private RecipeManager _recipeManager; // Add this line
+        private CraftingUI _craftingUI;
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -96,6 +97,9 @@ namespace MyIslandGame.States
             _inputManager.RegisterAction("MoveRight", new InputAction().MapKey(Keys.D).MapKey(Keys.Right));
             _inputManager.RegisterAction("Interact", new InputAction().MapKey(Keys.E).MapKey(Keys.Space));
             _inputManager.RegisterAction("ToggleCrafting", new InputAction().MapKey(Keys.C)); // Add this line
+            _inputManager.RegisterAction("OpenCrafting", new InputAction().MapKey(Keys.C));
+            _inputManager.RegisterAction("CloseCrafting", new InputAction().MapKey(Keys.Escape));
+            _inputManager.RegisterAction("Craft", new InputAction().MapMouseButton(MouseButton.Left));
             
             // Create systems
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -122,6 +126,13 @@ namespace MyIslandGame.States
             
             // Set up resource gathering feedback
             _gatheringSystem.ResourceGathered += OnResourceGathered;
+
+            // Initialize recipe manager and crafting system
+            _recipeManager = new RecipeManager(_resourceManager, GraphicsDevice);
+            _recipeManager.InitializeDefaultRecipes();
+
+            _craftingSystem = new CraftingSystem(_entityManager, _recipeManager, _inputManager, _resourceManager);
+            _entityManager.AddSystem(_craftingSystem);
         }
         
         /// <summary>
@@ -220,6 +231,54 @@ namespace MyIslandGame.States
             
             // Create environmental objects
             PopulateWorldWithEnvironmentalObjects();
+
+            // Initialize crafting UI
+            _craftingUI = new CraftingUI(
+                _craftingSystem,
+                _inputManager,
+                _entityManager,
+                _uiManager,
+                GraphicsDevice,
+                _resourceManager);
+                
+            // Register crafting UI with UI manager for drawing
+            _uiManager.RegisterUIElement("crafting", _craftingUI.Draw, UIManager.Layer.Top);
+            
+            // Position player in the center of a valid land tile
+            mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
+
+            // Find a guaranteed valid position for the player
+            bool foundValidPosition = false;
+            Vector2 spawnPosition = mapCenter;
+
+            // Try center first, then spiral out to find valid position
+            for (int radius = 0; radius < 10 && !foundValidPosition; radius++)
+            {
+                for (int x = -radius; x <= radius && !foundValidPosition; x++)
+                {
+                    for (int y = -radius; y <= radius && !foundValidPosition; y++)
+                    {
+                        if (Math.Abs(x) != radius && Math.Abs(y) != radius)
+                            continue; // Only check the perimeter of each radius
+                            
+                        Point tilePos = _tileMap.WorldToTile(mapCenter + new Vector2(x * 64, y * 64));
+                        Tile tile = _tileMap.GetTile(tilePos.X, tilePos.Y);
+                        
+                        if (tile != null && tile.IsPassable && !tile.IsWater)
+                        {
+                            spawnPosition = _tileMap.TileToWorld(tilePos.X, tilePos.Y) + new Vector2(32, 32);
+                            foundValidPosition = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            playerTransform = new TransformComponent(spawnPosition);
+            
+            // Add crafting component to player
+            var craftingComponent = new CraftingComponent(CraftingStationType.None);
+            _playerEntity.AddComponent(craftingComponent);
         }
         
         /// <summary>
@@ -446,6 +505,9 @@ namespace MyIslandGame.States
             }
 
             _uiManager.Update(gameTime);
+
+            // Update crafting UI
+            _craftingUI.Update(gameTime);
         }
         
         /// <summary>

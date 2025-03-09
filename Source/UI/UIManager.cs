@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
@@ -24,6 +25,16 @@ namespace MyIslandGame.UI
         // UI Components
         private InventoryUI _inventoryUI;
         private CraftingUI _craftingUI;
+
+        public enum Layer
+        {
+            Bottom,
+            Middle,
+            Top
+        }
+
+        private Dictionary<string, (Action<SpriteBatch> drawAction, Layer layer)> _uiElements 
+            = new Dictionary<string, (Action<SpriteBatch>, Layer)>();
         
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManager"/> class.
@@ -137,6 +148,15 @@ namespace MyIslandGame.UI
             {
                 _craftingUI.Draw(_spriteBatch);
             }
+
+            // Draw elements in order by layer
+            foreach (Layer layer in Enum.GetValues(typeof(Layer)))
+            {
+                foreach (var element in _uiElements.Where(e => e.Value.layer == layer))
+                {
+                    element.Value.drawAction(_spriteBatch);
+                }
+            }
         }
 
         /// <summary>
@@ -237,6 +257,14 @@ namespace MyIslandGame.UI
             
             // Clean up the temporary texture
             pixel.Dispose();
+        }
+
+        public void RegisterUIElement(string id, Action<SpriteBatch> drawAction, Layer layer)
+        {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentNullException(nameof(id));
+                
+            _uiElements[id] = (drawAction, layer);
         }
     }
 }
