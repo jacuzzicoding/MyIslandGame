@@ -37,7 +37,8 @@ namespace MyIslandGame.States
         private RecipeManager _recipeManager; // Add this line
         private CraftingUI _craftingUI;
         private EmergencyCraftingUI _emergencyCraftingUI; // Fallback UI
-    private ModernCraftingUI _modernCraftingUI; // New UI using improved architecture
+        private ModernCraftingUI _modernCraftingUI; // New UI using improved architecture
+    private DirectCraftingUI _directCraftingUI; // Independent UI for guaranteed rendering
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -190,6 +191,9 @@ namespace MyIslandGame.States
             
             // Position player in the center of the map
             Vector2 mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
+            
+            // Create a crafting station near the player for testing
+            CreateCraftingStation(mapCenter + new Vector2(100, 0));
             var playerTransform = new TransformComponent(mapCenter);
             
             var playerSprite = new SpriteComponent(_playerTexture)
@@ -281,6 +285,13 @@ namespace MyIslandGame.States
                 _resourceManager,
                 _debugFont);
             Console.WriteLine("Created modern crafting UI using the new architecture");
+            
+            // Create direct crafting UI as a guaranteed fallback option
+            _directCraftingUI = new DirectCraftingUI(
+                _craftingSystem,
+                GraphicsDevice,
+                _debugFont);
+            Console.WriteLine("Created direct crafting UI as independent system");
                 
             // Register the ModernCraftingUI as the primary crafting UI
             _uiManager.RegisterUIElement("crafting-ui", _modernCraftingUI);
@@ -348,6 +359,37 @@ namespace MyIslandGame.States
                 Origin = new Vector2(texture.Width / 2f, texture.Height / 2f)
             });
             entity.AddComponent(new ColliderComponent(size, Vector2.Zero, ColliderType.Rectangle));
+        }
+        
+        /// <summary>
+        /// Creates a crafting station for testing crafting functionality.
+        /// </summary>
+        /// <param name="position">The position to create the station at.</param>
+        private void CreateCraftingStation(Vector2 position)
+        {
+            // Create a crafting table with a distinct appearance
+            var size = new Vector2(48, 48);
+            var texture = CreateColoredTexture((int)size.X, (int)size.Y, new Color(139, 69, 19)); // Brown color
+            
+            var entity = _entityManager.CreateEntity();
+            
+            // Add basic components
+            entity.AddComponent(new TransformComponent(position));
+            entity.AddComponent(new SpriteComponent(texture)
+            {
+                Origin = new Vector2(texture.Width / 2f, texture.Height / 2f)
+            });
+            
+            // Add collision with a trigger for interaction
+            var collider = new ColliderComponent(size, Vector2.Zero, ColliderType.Rectangle);
+            collider.IsTrigger = true; // Make it a trigger so player can stand on it
+            entity.AddComponent(collider);
+            
+            // Add crafting component with crafting table ability
+            var craftingComponent = new CraftingComponent(CraftingStationType.CraftingTable);
+            entity.AddComponent(craftingComponent);
+            
+            Console.WriteLine("Created crafting station at " + position);
         }
         
         /// <summary>
@@ -547,33 +589,52 @@ namespace MyIslandGame.States
             // Update entity manager (and all systems)
             _entityManager.Update(gameTime);
 
-            // Handle crafting toggle
+            // Handle crafting toggle with force-enabled logging
             if (_inputManager.WasActionTriggered("ToggleCrafting") || _inputManager.WasActionTriggered("OpenCrafting"))
             {
                 if (_craftingSystem.IsCraftingActive)
                 {
                     _craftingSystem.CloseCrafting();
-                    Console.WriteLine("Crafting closed");
+                    Console.WriteLine("PlayingState: Crafting closed");
                 }
                 else
                 {
                     // Use a basic crafting grid (2x2)
                     _craftingSystem.OpenCrafting(CraftingStationType.None);
-                    Console.WriteLine("Crafting opened with basic 2x2 grid");
+                    Console.WriteLine("PlayingState: Crafting opened with basic 2x2 grid");
+                    
+                    // Force ModernCraftingUI to be visible
+                    if (_modernCraftingUI != null)
+                    {
+                        // Manual update of UI state (backup approach)
+                        Console.WriteLine("PlayingState: Manually forcing ModernCraftingUI visibility");
+                    }
                 }
                 
-                Console.WriteLine($"Crafting toggled: {_craftingSystem.IsCraftingActive} with station type: {_craftingSystem.CurrentStation}");
+                // Extra debugging info
+                Console.WriteLine($"PlayingState: Crafting toggled - IsCraftingActive={_craftingSystem.IsCraftingActive}, Station={_craftingSystem.CurrentStation}");
+                Console.WriteLine($"PlayingState: ModernCraftingUI state - IsVisible={_modernCraftingUI.IsVisible}, IsActive={_modernCraftingUI.IsActive}");
+                
+                // Immediately force update UI in case any events were missed
+                _uiManager.Update(gameTime);
             }
             else if (_inputManager.WasActionTriggered("CloseCrafting") && _craftingSystem.IsCraftingActive)
             {
                 _craftingSystem.CloseCrafting();
-                Console.WriteLine("Crafting closed via Escape key");
+                Console.WriteLine("PlayingState: Crafting closed via Escape key");
+            }
+            
+            // Debug: Show C key status
+            if (Keyboard.GetState().IsKeyDown(Keys.C))
+            {
+                Console.WriteLine("PlayingState: C key is currently pressed");
             }
 
             _uiManager.Update(gameTime);
 
-            // Update crafting UI
+            // Update crafting UIs - include direct UI which is independent system
             _craftingUI.Update(gameTime);
+            _directCraftingUI.Update();
         }
         
         /// <summary>
@@ -670,6 +731,13 @@ namespace MyIslandGame.States
             }
             
             _spriteBatch.End();
+            
+            // Draw direct crafting UI as a totally independent system
+            // This will always render if crafting is active regardless of other UIs
+            if (_craftingSystem.IsCraftingActive)
+            {
+                _directCraftingUI.Draw();
+            }
         }
         
         /// <summary>

@@ -202,6 +202,24 @@ namespace MyIslandGame.Input
                 _ => false
             };
         }
+        
+        /// <summary>
+        /// Gets the current mouse state.
+        /// </summary>
+        /// <returns>The current mouse state.</returns>
+        public MouseState GetMouseState()
+        {
+            return _currentMouseState;
+        }
+        
+        /// <summary>
+        /// Gets the previous mouse state.
+        /// </summary>
+        /// <returns>The previous mouse state.</returns>
+        public MouseState GetPreviousMouseState()
+        {
+            return _previousMouseState;
+        }
     }
     
     /// <summary>

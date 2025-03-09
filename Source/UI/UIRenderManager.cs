@@ -140,14 +140,27 @@ namespace MyIslandGame.UI
         /// </summary>
         public void Draw()
         {
+            Console.WriteLine("UIRenderManager.Draw: Starting UI rendering process");
+            
+            // Show counts of elements in each layer
+            foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
+            {
+                int totalElements = _layeredElements[layer].Count;
+                int visibleElements = _layeredElements[layer].Count(e => e.IsVisible);
+                Console.WriteLine($"UIRenderManager.Draw: Layer {layer} has {totalElements} elements ({visibleElements} visible)");
+            }
+            
             // Draw each layer with proper Begin/End
             foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
             {
                 // Skip empty layers
                 if (_layeredElements[layer].Count == 0 || !_layeredElements[layer].Any(e => e.IsVisible))
                 {
+                    Console.WriteLine($"UIRenderManager.Draw: Skipping empty or invisible layer {layer}");
                     continue;
                 }
+                
+                Console.WriteLine($"UIRenderManager.Draw: Drawing layer {layer} with {_layeredElements[layer].Count(e => e.IsVisible)} visible elements");
                 
                 try
                 {

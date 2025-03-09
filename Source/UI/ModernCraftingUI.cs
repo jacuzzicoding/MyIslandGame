@@ -129,9 +129,18 @@ namespace MyIslandGame.UI
         /// <param name="gameTime">The game time.</param>
         public override void Update(GameTime gameTime)
         {
+            bool wasVisible = IsVisible;
+            bool wasActive = IsActive;
+            
             // Update visibility and activity based on crafting system state
             IsVisible = _craftingSystem.IsCraftingActive;
             IsActive = _craftingSystem.IsCraftingActive;
+            
+            // Log state changes for debugging
+            if (wasVisible != IsVisible || wasActive != IsActive)
+            {
+                Console.WriteLine($"ModernCraftingUI: Visibility={IsVisible}, Active={IsActive}, CraftingSystem.IsCraftingActive={_craftingSystem.IsCraftingActive}");
+            }
             
             if (!IsVisible || !IsActive)
                 return;
@@ -163,8 +172,25 @@ namespace MyIslandGame.UI
         /// <param name="spriteBatch">The sprite batch to use for drawing.</param>
         public override void Draw(SpriteBatch spriteBatch)
         {
-            if (!IsVisible || !_isInitialized)
+            if (spriteBatch == null)
+            {
+                Console.WriteLine("ModernCraftingUI.Draw: SpriteBatch is null!");
                 return;
+            }
+            
+            if (!IsVisible)
+            {
+                Console.WriteLine("ModernCraftingUI.Draw: Not visible, skipping drawing");
+                return;
+            }
+            
+            if (!_isInitialized)
+            {
+                Console.WriteLine("ModernCraftingUI.Draw: Not initialized, skipping drawing");
+                return;
+            }
+            
+            Console.WriteLine("ModernCraftingUI.Draw: Drawing UI!");
             
             // Draw background
             spriteBatch.Draw(_backgroundTexture, _craftingGridBounds, Color.White);
@@ -720,6 +746,8 @@ namespace MyIslandGame.UI
         /// <param name="e">The event arguments.</param>
         private void OnCraftingStateChanged(object sender, CraftingStateChangedEventArgs e)
         {
+            Console.WriteLine($"ModernCraftingUI: CraftingStateChanged event received - IsActive={e.IsActive}, StationType={e.StationType}");
+            
             // Update visibility based on crafting state
             IsVisible = e.IsActive;
             IsActive = e.IsActive;
@@ -730,6 +758,9 @@ namespace MyIslandGame.UI
                 ReturnDraggedItem();
                 ResetDragState();
             }
+            
+            // Force a layout update immediately
+            UpdateLayout();
         }
         
         /// <summary>

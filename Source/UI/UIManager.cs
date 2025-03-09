@@ -164,6 +164,8 @@ namespace MyIslandGame.UI
         /// </summary>
         public void Draw()
         {
+            Console.WriteLine("UIManager.Draw: Starting UI drawing process");
+            
             // Draw inventory UI
             if (_inventoryUI != null)
             {

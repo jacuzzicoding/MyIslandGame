@@ -396,6 +396,24 @@ namespace MyIslandGame.Crafting
             else
                 OpenCrafting(CraftingStationType.None);
         }
+        
+        /// <summary>
+        /// Gets the resource manager associated with this crafting system.
+        /// </summary>
+        /// <returns>The resource manager instance.</returns>
+        public ResourceManager GetResourceManager()
+        {
+            return _resourceManager;
+        }
+        
+        /// <summary>
+        /// Gets the recipe manager associated with this crafting system.
+        /// </summary>
+        /// <returns>The recipe manager instance.</returns>
+        public RecipeManager GetRecipeManager()
+        {
+            return _recipeManager;
+        }
     }
 
     /// <summary>
