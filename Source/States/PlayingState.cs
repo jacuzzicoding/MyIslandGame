@@ -36,7 +36,8 @@ namespace MyIslandGame.States
         private CraftingSystem _craftingSystem;
         private RecipeManager _recipeManager; // Add this line
         private CraftingUI _craftingUI;
-        private EmergencyCraftingUI _emergencyCraftingUI; // Add emergency UI
+        private EmergencyCraftingUI _emergencyCraftingUI; // Fallback UI
+    private ModernCraftingUI _modernCraftingUI; // New UI using improved architecture
         
         private Entity _playerEntity;
         private Texture2D _playerTexture;
@@ -73,7 +74,7 @@ namespace MyIslandGame.States
             // Initialize time manager (24 minutes per day with 20 real seconds per game day)
             _gameTimeManager = new TimeManager(1440f, 72f, 480f); // Start at 8:00 AM
             
-            // Initialize UI manager
+            // Initialize UI manager with new renderer
             _uiManager = new UIManager(game.GraphicsDevice);
             
             // Initialize world generator
@@ -270,10 +271,22 @@ namespace MyIslandGame.States
                 GraphicsDevice,
                 _debugFont);
             Console.WriteLine("Created emergency crafting UI");
+            
+            // Create modern crafting UI using the new architecture
+            _modernCraftingUI = new ModernCraftingUI(
+                GraphicsDevice,
+                _craftingSystem,
+                _inputManager,
+                _entityManager,
+                _resourceManager,
+                _debugFont);
+            Console.WriteLine("Created modern crafting UI using the new architecture");
                 
-            // Register crafting UI with UI manager for drawing
+            // Register crafting UIs with UI manager for drawing
             _uiManager.RegisterUIElement("crafting", _craftingUI.Draw, UIManager.Layer.Top);
-            Console.WriteLine("Registered CraftingUI with UIManager");
+            // Register the modern UI using new architecture
+            _uiManager.RegisterUIElement("modern-crafting", _modernCraftingUI);
+            Console.WriteLine("Registered both CraftingUIs with UIManager");
             
             // Position player in the center of a valid land tile
             mapCenter = new Vector2(_worldBounds.Width / 2f, _worldBounds.Height / 2f);
@@ -535,11 +548,13 @@ namespace MyIslandGame.States
                 if (_craftingSystem.IsCraftingActive)
                 {
                     _craftingSystem.CloseCrafting();
+                    Console.WriteLine("Crafting closed");
                 }
                 else
                 {
                     // Use a basic crafting grid (2x2)
                     _craftingSystem.OpenCrafting(CraftingStationType.None);
+                    Console.WriteLine("Crafting opened with basic 2x2 grid");
                 }
                 
                 Console.WriteLine($"Crafting toggled: {_craftingSystem.IsCraftingActive} with station type: {_craftingSystem.CurrentStation}");
@@ -640,11 +655,13 @@ namespace MyIslandGame.States
             // Draw normal UI
             _uiManager.Draw();
             
-            // DIRECT EMERGENCY CRAFTING UI - Guaranteed to work
-            if (_craftingSystem.IsCraftingActive)
+            // Only use emergency UI if debugging
+            // Our modern crafting UI should be used by the _uiManager.Draw() call
+            // But keep this as a fallback during development
+            if (_craftingSystem.IsCraftingActive && Keyboard.GetState().IsKeyDown(Keys.LeftShift))
             {
                 _emergencyCraftingUI.Draw(_spriteBatch);
-                Console.WriteLine("Drew emergency crafting UI");
+                Console.WriteLine("Drew emergency crafting UI (fallback mode)");
             }
             
             _spriteBatch.End();
