@@ -20,21 +20,27 @@ namespace MyIslandGame.UI
     {
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
+        private readonly UIRenderManager _renderManager;
         private SpriteFont _debugFont;
         
         // UI Components
         private InventoryUI _inventoryUI;
         private CraftingUI _craftingUI;
-
+        
+        // For backward compatibility
         public enum Layer
         {
             Bottom,
             Middle,
             Top
         }
-
-        private Dictionary<string, (Action<SpriteBatch> drawAction, Layer layer)> _uiElements 
+        
+        // Dictionary for legacy UI elements
+        private Dictionary<string, (Action<SpriteBatch> drawAction, Layer layer)> _legacyUiElements 
             = new Dictionary<string, (Action<SpriteBatch>, Layer)>();
+            
+        // Dictionary for new UI elements
+        private Dictionary<string, IUIElement> _uiElements = new Dictionary<string, IUIElement>();
         
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManager"/> class.
@@ -44,6 +50,7 @@ namespace MyIslandGame.UI
         {
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             _spriteBatch = new SpriteBatch(graphicsDevice);
+            _renderManager = new UIRenderManager(graphicsDevice);
         }
         
         /// <summary>
@@ -130,6 +137,9 @@ namespace MyIslandGame.UI
             {
                 _craftingUI.Update(gameTime);
             }
+            
+            // Update all new UI elements
+            _renderManager.Update(gameTime);
         }
         
         /// <summary>
@@ -137,29 +147,43 @@ namespace MyIslandGame.UI
         /// </summary>
         public void Draw()
         {
-            // IMPORTANT: Don't call SpriteBatch.Begin or SpriteBatch.End here
-            // The calling code should handle this properly
-            
             // Draw inventory UI
             if (_inventoryUI != null)
             {
+                // Begin/End handled internally (legacy behavior)
                 _inventoryUI.Draw();
             }
             
-            // Draw crafting UI if active
+            // FIRST: Use the new UIRenderManager to draw all new UI elements
+            _renderManager.Draw();
+            
+            // THEN: Draw legacy UI elements with manual Begin/End
+            // Group by layer for efficient rendering
+            _spriteBatch.Begin();
+            
+            // Draw crafting UI if active (legacy behavior)
             if (_craftingUI != null)
             {
                 _craftingUI.Draw(_spriteBatch);
             }
-
-            // Draw elements in order by layer
+            
+            // Draw legacy elements by layer
             foreach (Layer layer in Enum.GetValues(typeof(Layer)))
             {
-                foreach (var element in _uiElements.Where(e => e.Value.layer == layer))
+                foreach (var element in _legacyUiElements.Where(e => e.Value.layer == layer))
                 {
-                    element.Value.drawAction(_spriteBatch);
+                    try 
+                    {
+                        element.Value.drawAction(_spriteBatch);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error drawing legacy UI element {element.Key}: {ex.Message}");
+                    }
                 }
             }
+            
+            _spriteBatch.End();
         }
 
         /// <summary>
@@ -274,12 +298,80 @@ namespace MyIslandGame.UI
             pixel.Dispose();
         }
 
+        /// <summary>
+        /// Registers a legacy UI element with a draw action.
+        /// </summary>
+        /// <param name="id">The unique identifier for the UI element.</param>
+        /// <param name="drawAction">The action to draw the UI element.</param>
+        /// <param name="layer">The layer to draw the UI element on.</param>
         public void RegisterUIElement(string id, Action<SpriteBatch> drawAction, Layer layer)
         {
             if (string.IsNullOrEmpty(id))
                 throw new ArgumentNullException(nameof(id));
                 
-            _uiElements[id] = (drawAction, layer);
+            Console.WriteLine($"Registering legacy UI element: {id} on layer {layer}");
+            _legacyUiElements[id] = (drawAction, layer);
+        }
+        
+        /// <summary>
+        /// Registers a new UI element implementing IUIElement.
+        /// </summary>
+        /// <param name="id">The unique identifier for the UI element.</param>
+        /// <param name="element">The UI element to register.</param>
+        public void RegisterUIElement(string id, IUIElement element)
+        {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentNullException(nameof(id));
+                
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+                
+            Console.WriteLine($"Registering new UI element: {id} on layer {element.Layer}");
+            
+            // Store in our dictionary
+            _uiElements[id] = element;
+            
+            // Register with the render manager
+            _renderManager.RegisterElement(element);
+            
+            // Initialize the element if it hasn't been
+            element.Initialize();
+        }
+        
+        /// <summary>
+        /// Unregisters a UI element by its ID.
+        /// </summary>
+        /// <param name="id">The unique identifier of the UI element to unregister.</param>
+        public void UnregisterUIElement(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return;
+                
+            // Try to remove from legacy elements
+            _legacyUiElements.Remove(id);
+            
+            // Try to remove from new elements
+            if (_uiElements.TryGetValue(id, out var element))
+            {
+                _renderManager.UnregisterElement(element);
+                _uiElements.Remove(id);
+            }
+        }
+        
+        /// <summary>
+        /// Gets a registered UI element by its ID.
+        /// </summary>
+        /// <param name="id">The unique identifier of the UI element.</param>
+        /// <returns>The UI element if found, otherwise null.</returns>
+        public IUIElement GetUIElement(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return null;
+                
+            if (_uiElements.TryGetValue(id, out var element))
+                return element;
+                
+            return null;
         }
     }
 }
