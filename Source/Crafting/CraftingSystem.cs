@@ -47,6 +47,11 @@ namespace MyIslandGame.Crafting
         /// Event raised when a crafting result changes.
         /// </summary>
         public event EventHandler<CraftingResultChangedEventArgs> CraftingResultChanged;
+        
+        /// <summary>
+        /// Event raised when the crafting state (active/inactive) changes.
+        /// </summary>
+        public event EventHandler<CraftingStateChangedEventArgs> CraftingStateChanged;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CraftingSystem"/> class.
@@ -159,6 +164,9 @@ namespace MyIslandGame.Crafting
             
             Console.WriteLine($"Crafting opened with station: {stationType}");
             
+            // Raise state changed event
+            OnCraftingStateChanged(true);
+            
             // Update the crafting result immediately
             UpdateCraftingResult();
         }
@@ -191,6 +199,10 @@ namespace MyIslandGame.Crafting
             _craftingGrid.GridChanged -= OnCraftingGridChanged;
             
             _isCraftingActive = false;
+            
+            // Raise state changed event
+            OnCraftingStateChanged(false);
+            
             Console.WriteLine("Crafting closed");
         }
 
@@ -366,6 +378,15 @@ namespace MyIslandGame.Crafting
         protected virtual void OnCraftingResultChanged(Recipe recipe)
         {
             CraftingResultChanged?.Invoke(this, new CraftingResultChangedEventArgs(recipe));
+        }
+        
+        /// <summary>
+        /// Raises the CraftingStateChanged event.
+        /// </summary>
+        /// <param name="isActive">Whether crafting is active.</param>
+        protected virtual void OnCraftingStateChanged(bool isActive)
+        {
+            CraftingStateChanged?.Invoke(this, new CraftingStateChangedEventArgs(isActive, _currentStation));
         }
 
         public void ToggleCrafting()
@@ -686,6 +707,33 @@ namespace MyIslandGame.Crafting
         public CraftingResultChangedEventArgs(Recipe recipe)
         {
             Recipe = recipe;
+        }
+    }
+    
+    /// <summary>
+    /// Event arguments for crafting state changed events.
+    /// </summary>
+    public class CraftingStateChangedEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Gets a value indicating whether crafting is active.
+        /// </summary>
+        public bool IsActive { get; }
+        
+        /// <summary>
+        /// Gets the current crafting station type.
+        /// </summary>
+        public CraftingStationType StationType { get; }
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CraftingStateChangedEventArgs"/> class.
+        /// </summary>
+        /// <param name="isActive">Whether crafting is active.</param>
+        /// <param name="stationType">The crafting station type.</param>
+        public CraftingStateChangedEventArgs(bool isActive, CraftingStationType stationType)
+        {
+            IsActive = isActive;
+            StationType = stationType;
         }
     }
 }
